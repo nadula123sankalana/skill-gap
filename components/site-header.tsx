@@ -1,9 +1,12 @@
-import Link from "next/link";
-import { getSession } from "@/lib/auth";
-import { SignOutButton } from "@/components/sign-out-button";
+"use client";
 
-export async function SiteHeader() {
-  const session = await getSession();
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { SignOutButton } from "@/components/sign-out-button";
+import { Skeleton } from "@/components/ui/spinner";
+
+export function SiteHeader() {
+  const { data: session, status } = useSession();
 
   return (
     <header className="border-b border-border bg-surface">
@@ -15,7 +18,9 @@ export async function SiteHeader() {
           SkillGap&nbsp;Assess
         </Link>
         <nav className="flex items-center gap-3 text-sm">
-          {session?.user ? (
+          {status === "loading" ? (
+            <Skeleton className="h-8 w-28" />
+          ) : session?.user ? (
             <>
               <span className="hidden text-muted sm:inline">
                 {session.user.name}

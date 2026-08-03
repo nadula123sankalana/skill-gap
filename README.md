@@ -59,14 +59,14 @@ Open [http://localhost:3000](http://localhost:3000).
 
 1. Push this repo to GitHub
 2. Import the project in [Vercel](https://vercel.com)
-3. Add environment variables:
-   - `DATABASE_URL`
-   - `NEXTAUTH_SECRET`
-   - `NEXTAUTH_URL` (your production URL, e.g. `https://your-app.vercel.app`)
-   - `GEMINI_API_KEY` (optional)
-4. Deploy
-5. In MongoDB Atlas → Network Access, allow Vercel IPs (or `0.0.0.0/0` for demos)
-6. Smoke-test: register student → assessment → gaps → admin cohort
+3. Add environment variables (all required except Gemini):
+   - `DATABASE_URL` — MongoDB Atlas URI (include DB name, e.g. `/skill-gap`)
+   - `NEXTAUTH_SECRET` — long random string (`openssl rand -base64 32`) — **required or the site 500s**
+   - `NEXTAUTH_URL` — production URL, e.g. `https://skill-gap-two.vercel.app`
+   - `GEMINI_API_KEY` — optional
+4. In MongoDB Atlas → Network Access, allow `0.0.0.0/0` (or Vercel IPs)
+5. Deploy, then run seed against Atlas if collections are empty (`npm run db:seed` locally with the same `DATABASE_URL`)
+6. Smoke-test: home → register → assessment → admin login
 
 ## Scripts
 

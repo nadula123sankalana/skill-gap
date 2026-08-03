@@ -1,8 +1,10 @@
-import Link from "next/link";
-import { getSession } from "@/lib/auth";
+"use client";
 
-export async function SiteFooter() {
-  const session = await getSession();
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+
+export function SiteFooter() {
+  const { data: session } = useSession();
 
   return (
     <footer className="mt-auto border-t border-border bg-surface">

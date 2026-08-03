@@ -28,6 +28,8 @@ declare module "next-auth/jwt" {
 }
 
 export const authOptions: NextAuthOptions = {
+  // Required in production (Vercel). Without this, getServerSession throws a 500.
+  secret: process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
@@ -89,6 +91,18 @@ export const authOptions: NextAuthOptions = {
   },
 };
 
-export function getSession() {
-  return getServerSession(authOptions);
+/** Never throw from the root layout — missing env on Vercel must not 500 the whole site. */
+export async function getSession() {
+  try {
+    if (!process.env.NEXTAUTH_SECRET) {
+      console.error(
+        "NEXTAUTH_SECRET is not set. Auth will not work until it is configured."
+      );
+      return null;
+    }
+    return await getServerSession(authOptions);
+  } catch (err) {
+    console.error("getSession failed:", err);
+    return null;
+  }
 }
