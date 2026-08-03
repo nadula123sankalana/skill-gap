@@ -20,12 +20,12 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
-      <aside className="noise-overlay relative isolate hidden overflow-hidden bg-mesh-hero px-10 py-16 lg:flex lg:flex-col lg:justify-center xl:px-16">
+    <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[1.2fr_0.8fr]">
+      <aside className="noise-overlay relative isolate hidden overflow-hidden bg-mesh-hero px-10 py-16 lg:flex lg:flex-col lg:items-start lg:justify-center xl:px-16">
         <div className="grid-overlay pointer-events-none absolute inset-0" aria-hidden />
 
-        <div className="pointer-events-none absolute inset-0" aria-hidden>
-          <Float className="absolute right-[-3rem] top-[12%]" delay={0.3} duration={7}>
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          <Float className="absolute right-6 top-[12%]" delay={0.3} duration={7}>
             <SkillPill
               skill="Cloud fundamentals"
               category="Critical gap"
@@ -35,7 +35,7 @@ export function AuthShell({
             />
           </Float>
           <Float
-            className="absolute right-[-2rem] bottom-[14%]"
+            className="absolute right-8 bottom-[14%]"
             delay={0.55}
             duration={8}
             reverse
@@ -50,37 +50,37 @@ export function AuthShell({
           </Float>
         </div>
 
-        <div className="relative max-w-md">
+        <div className="relative my-auto max-w-lg">
           <Link href="/" className="inline-flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/20 text-white ring-1 ring-white/30">
-              <Activity className="h-4 w-4" aria-hidden />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 text-white ring-1 ring-white/30">
+              <Activity className="h-5 w-5" aria-hidden />
             </span>
-            <span className="font-display text-lg font-medium text-white">
+            <span className="font-display text-xl font-medium text-white">
               SkillGap
             </span>
           </Link>
 
-          <Reveal className="mt-12">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">
+          <Reveal className="mt-10">
+            <p className="text-sm font-medium uppercase tracking-[0.16em] text-white/70">
               {eyebrow}
             </p>
-            <h2 className="mt-4 font-display text-[2.1rem] font-medium leading-tight tracking-tight text-white">
+            <h2 className="mt-5 font-display text-3xl font-medium leading-[1.15] tracking-tight text-white xl:text-[2.75rem]">
               {title}
             </h2>
-            <p className="mt-4 text-sm leading-relaxed text-white/80">
+            <p className="mt-5 text-base leading-relaxed text-white/85 xl:text-lg">
               {subtitle}
             </p>
           </Reveal>
 
-          <StaggerGroup as="ul" className="mt-9 space-y-3.5" delay={0.25}>
+          <StaggerGroup as="ul" className="mt-10 space-y-4" delay={0.25}>
             {bullets.map((bullet) => (
               <StaggerItem
                 as="li"
                 key={bullet}
-                className="flex items-start gap-3 text-sm text-white/85"
+                className="flex items-start gap-3 text-base text-white/90"
               >
-                <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30">
-                  <Check className="h-3 w-3 text-white" aria-hidden />
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/20 ring-1 ring-white/30">
+                  <Check className="h-3.5 w-3.5 text-white" aria-hidden />
                 </span>
                 {bullet}
               </StaggerItem>
@@ -89,8 +89,8 @@ export function AuthShell({
         </div>
       </aside>
 
-      <div className="flex items-center justify-center bg-subtle px-4 py-14 sm:px-8">
-        <div className="w-full max-w-md">{children}</div>
+      <div className="flex items-center justify-center bg-white px-5 py-14 sm:px-8 lg:px-10">
+        <div className="w-full max-w-sm">{children}</div>
       </div>
     </div>
   );

@@ -11,13 +11,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export function LoginForm() {
   const router = useRouter();
@@ -73,70 +66,74 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md p-2 shadow-lift">
-      <CardHeader>
-        <CardTitle className="text-2xl">Log in</CardTitle>
-        <CardDescription>
-          Students go to the dashboard; admins go to configuration.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={onSubmit} className="space-y-4">
-          <AnimatePresence initial={false}>
-            {error && (
-              <motion.div
-                key="login-error"
-                initial={reduced ? undefined : { opacity: 0, height: 0 }}
-                animate={reduced ? undefined : { opacity: 1, height: "auto" }}
-                exit={reduced ? undefined : { opacity: 0, height: 0 }}
-                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                className="overflow-hidden"
-              >
-                <Alert variant="destructive">{error}</Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
+    <div className="w-full">
+      <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary lg:text-muted">
+        Welcome back
+      </p>
+      <h1 className="mt-3 font-display text-3xl font-medium tracking-tight text-foreground">
+        Log in
+      </h1>
+      <p className="mt-2 text-sm text-muted">
+        Students go to the dashboard; admins go to configuration.
+      </p>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              required
-            />
-          </div>
+      <form onSubmit={onSubmit} className="mt-8 space-y-4">
+        <AnimatePresence initial={false}>
+          {error && (
+            <motion.div
+              key="login-error"
+              initial={reduced ? undefined : { opacity: 0, height: 0 }}
+              animate={reduced ? undefined : { opacity: 1, height: "auto" }}
+              exit={reduced ? undefined : { opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <Alert variant="destructive">{error}</Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <Button type="submit" size="lg" className="w-full" disabled={pending}>
-            {pending ? (
-              <>
-                <Spinner className="h-4 w-4" />
-                Signing in…
-              </>
-            ) : (
-              "Sign in"
-            )}
-          </Button>
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            required
+            className="bg-white border-border/70 shadow-none"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="password">Password</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            className="bg-white border-border/70 shadow-none"
+          />
+        </div>
 
-          <p className="text-center text-sm text-muted">
-            New student?{" "}
-            <Link href="/register" className="text-primary hover:underline">
-              Register
-            </Link>
-          </p>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" size="lg" className="w-full" disabled={pending}>
+          {pending ? (
+            <>
+              <Spinner className="h-4 w-4" />
+              Signing in…
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </Button>
+
+        <p className="text-center text-sm text-muted">
+          New student?{" "}
+          <Link href="/register" className="font-medium text-primary hover:underline">
+            Register
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }

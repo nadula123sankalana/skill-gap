@@ -13,14 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { easeOut } from "@/lib/motion";
+import { cn } from "@/lib/utils";
 
 const initial: ActionResult = { success: false, message: "" };
 
@@ -72,7 +66,6 @@ export function RegisterForm() {
     }
   }, [state.success, router]);
 
-  // If server returns field errors for step 1, jump back so the user can fix them.
   useEffect(() => {
     if (!state.success && state.errors) {
       const step1Keys = ["name", "email", "password"];
@@ -94,7 +87,10 @@ export function RegisterForm() {
       setStepError("Please enter your full name.");
       return;
     }
-    if (!values.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+    if (
+      !values.email.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)
+    ) {
       setStepError("Please enter a valid email address.");
       return;
     }
@@ -109,189 +105,187 @@ export function RegisterForm() {
   const progress = step === 1 ? 50 : 100;
 
   return (
-    <Card className="w-full max-w-md p-2 shadow-lift">
-      <CardHeader>
-        <CardTitle className="text-2xl font-medium">
-          Student registration
-        </CardTitle>
-        <CardDescription>
-          {step === 1
-            ? "Step 1 of 2 — create your account details."
-            : "Step 2 of 2 — tell us about your studies."}
-        </CardDescription>
+    <div className="w-full">
+      <p className="text-xs font-medium uppercase tracking-[0.16em] text-primary lg:text-muted">
+        Create account
+      </p>
+      <h1 className="mt-3 font-display text-3xl font-medium tracking-tight text-foreground">
+        Student registration
+      </h1>
+      <p className="mt-2 text-sm text-muted">
+        {step === 1
+          ? "Step 1 of 2 — create your account details."
+          : "Step 2 of 2 — tell us about your studies."}
+      </p>
 
-        <div className="pt-4">
-          <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted">
-            <span className={step === 1 ? "text-primary" : undefined}>
-              Account
-            </span>
-            <span className={step === 2 ? "text-primary" : undefined}>
-              Studies
-            </span>
-          </div>
-          <div
-            className="h-2 w-full overflow-hidden rounded-full bg-accent"
-            role="progressbar"
-            aria-valuemin={1}
-            aria-valuemax={2}
-            aria-valuenow={step}
-            aria-label={`Registration step ${step} of 2`}
-          >
-            <motion.div
-              className="h-full rounded-full bg-brand-pill"
-              animate={{ width: `${progress}%` }}
-              initial={false}
-              transition={
-                reduced ? { duration: 0 } : { duration: 0.4, ease: easeOut }
-              }
-            />
-          </div>
+      <div className="mt-6">
+        <div className="mb-2 flex items-center justify-between text-xs font-medium text-muted">
+          <span className={step === 1 ? "text-primary" : undefined}>
+            Account
+          </span>
+          <span className={step === 2 ? "text-primary" : undefined}>
+            Studies
+          </span>
         </div>
-      </CardHeader>
-
-      <CardContent>
-        <form
-          action={step === 2 ? formAction : undefined}
-          onSubmit={step === 1 ? goNext : undefined}
-          className="space-y-4"
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-accent/80"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={2}
+          aria-valuenow={step}
+          aria-label={`Registration step ${step} of 2`}
         >
-          {/* Keep step-1 values in the form when submitting from step 2 */}
-          {step === 2 && (
-            <>
-              <input type="hidden" name="name" value={values.name} />
-              <input type="hidden" name="email" value={values.email} />
-              <input type="hidden" name="password" value={values.password} />
-            </>
+          <motion.div
+            className="h-full rounded-full bg-brand-pill"
+            animate={{ width: `${progress}%` }}
+            initial={false}
+            transition={
+              reduced ? { duration: 0 } : { duration: 0.4, ease: easeOut }
+            }
+          />
+        </div>
+      </div>
+
+      <form
+        action={step === 2 ? formAction : undefined}
+        onSubmit={step === 1 ? goNext : undefined}
+        className="mt-8 space-y-4"
+      >
+        {step === 2 && (
+          <>
+            <input type="hidden" name="name" value={values.name} />
+            <input type="hidden" name="email" value={values.email} />
+            <input type="hidden" name="password" value={values.password} />
+          </>
+        )}
+
+        <AnimatePresence initial={false}>
+          {(stepError || (state.message && !state.success)) && (
+            <motion.div
+              key="register-error"
+              initial={reduced ? undefined : { opacity: 0, height: 0 }}
+              animate={reduced ? undefined : { opacity: 1, height: "auto" }}
+              exit={reduced ? undefined : { opacity: 0, height: 0 }}
+              transition={{ duration: 0.25, ease: easeOut }}
+              className="overflow-hidden"
+            >
+              <Alert variant="destructive">
+                {stepError || state.message}
+              </Alert>
+            </motion.div>
           )}
+        </AnimatePresence>
 
-          <AnimatePresence initial={false}>
-            {(stepError || (state.message && !state.success)) && (
-              <motion.div
-                key="register-error"
-                initial={reduced ? undefined : { opacity: 0, height: 0 }}
-                animate={reduced ? undefined : { opacity: 1, height: "auto" }}
-                exit={reduced ? undefined : { opacity: 0, height: 0 }}
-                transition={{ duration: 0.25, ease: easeOut }}
-                className="overflow-hidden"
-              >
-                <Alert variant="destructive">
-                  {stepError || state.message}
-                </Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <AnimatePresence mode="wait" initial={false}>
+          {step === 1 ? (
+            <motion.div
+              key="step-1"
+              initial={reduced ? undefined : { opacity: 0, x: 16 }}
+              animate={reduced ? undefined : { opacity: 1, x: 0 }}
+              exit={reduced ? undefined : { opacity: 0, x: -16 }}
+              transition={{ duration: 0.28, ease: easeOut }}
+              className="space-y-4"
+            >
+              <Field
+                id="name"
+                label="Full name"
+                name="name"
+                autoComplete="name"
+                value={values.name}
+                onChange={(v) => updateField("name", v)}
+                error={state.errors?.name?.[0]}
+              />
+              <Field
+                id="email"
+                label="Email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={values.email}
+                onChange={(v) => updateField("email", v)}
+                error={state.errors?.email?.[0]}
+              />
+              <Field
+                id="password"
+                label="Password"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                value={values.password}
+                onChange={(v) => updateField("password", v)}
+                error={state.errors?.password?.[0]}
+              />
 
-          <AnimatePresence mode="wait" initial={false}>
-            {step === 1 ? (
-              <motion.div
-                key="step-1"
-                initial={reduced ? undefined : { opacity: 0, x: 16 }}
-                animate={reduced ? undefined : { opacity: 1, x: 0 }}
-                exit={reduced ? undefined : { opacity: 0, x: -16 }}
-                transition={{ duration: 0.28, ease: easeOut }}
-                className="space-y-4"
-              >
-                <Field
-                  id="name"
-                  label="Full name"
-                  name="name"
-                  autoComplete="name"
-                  value={values.name}
-                  onChange={(v) => updateField("name", v)}
-                  error={state.errors?.name?.[0]}
-                />
-                <Field
-                  id="email"
-                  label="Email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={values.email}
-                  onChange={(v) => updateField("email", v)}
-                  error={state.errors?.email?.[0]}
-                />
-                <Field
-                  id="password"
-                  label="Password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  value={values.password}
-                  onChange={(v) => updateField("password", v)}
-                  error={state.errors?.password?.[0]}
-                />
+              <Button type="submit" size="lg" className="w-full">
+                Continue
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="step-2"
+              initial={reduced ? undefined : { opacity: 0, x: 16 }}
+              animate={reduced ? undefined : { opacity: 1, x: 0 }}
+              exit={reduced ? undefined : { opacity: 0, x: -16 }}
+              transition={{ duration: 0.28, ease: easeOut }}
+              className="space-y-4"
+            >
+              <Field
+                id="university"
+                label="University"
+                name="university"
+                value={values.university}
+                onChange={(v) => updateField("university", v)}
+                error={state.errors?.university?.[0]}
+              />
+              <Field
+                id="degreeProgram"
+                label="Degree program"
+                name="degreeProgram"
+                value={values.degreeProgram}
+                onChange={(v) => updateField("degreeProgram", v)}
+                error={state.errors?.degreeProgram?.[0]}
+              />
+              <Field
+                id="year"
+                label="Year of study"
+                name="year"
+                type="number"
+                min={1}
+                max={8}
+                value={values.year}
+                onChange={(v) => updateField("year", v)}
+                error={state.errors?.year?.[0]}
+              />
 
-                <Button type="submit" size="lg" className="w-full">
-                  Continue
-                  <ArrowRight className="h-4 w-4" aria-hidden />
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  size="lg"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setStepError(null);
+                    setStep(1);
+                  }}
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden />
+                  Back
                 </Button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="step-2"
-                initial={reduced ? undefined : { opacity: 0, x: 16 }}
-                animate={reduced ? undefined : { opacity: 1, x: 0 }}
-                exit={reduced ? undefined : { opacity: 0, x: -16 }}
-                transition={{ duration: 0.28, ease: easeOut }}
-                className="space-y-4"
-              >
-                <Field
-                  id="university"
-                  label="University"
-                  name="university"
-                  value={values.university}
-                  onChange={(v) => updateField("university", v)}
-                  error={state.errors?.university?.[0]}
-                />
-                <Field
-                  id="degreeProgram"
-                  label="Degree program"
-                  name="degreeProgram"
-                  value={values.degreeProgram}
-                  onChange={(v) => updateField("degreeProgram", v)}
-                  error={state.errors?.degreeProgram?.[0]}
-                />
-                <Field
-                  id="year"
-                  label="Year of study"
-                  name="year"
-                  type="number"
-                  min={1}
-                  max={8}
-                  value={values.year}
-                  onChange={(v) => updateField("year", v)}
-                  error={state.errors?.year?.[0]}
-                />
+                <SubmitButton />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-                <div className="flex gap-3">
-                  <Button
-                    type="button"
-                    size="lg"
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => {
-                      setStepError(null);
-                      setStep(1);
-                    }}
-                  >
-                    <ArrowLeft className="h-4 w-4" aria-hidden />
-                    Back
-                  </Button>
-                  <SubmitButton />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <p className="text-center text-sm text-muted">
-            Already registered?{" "}
-            <Link href="/login" className="text-primary hover:underline">
-              Log in
-            </Link>
-          </p>
-        </form>
-      </CardContent>
-    </Card>
+        <p className="text-center text-sm text-muted">
+          Already registered?{" "}
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            Log in
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }
 
@@ -332,9 +326,10 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={!!error}
-        className={
-          error ? "border-severity-red focus-visible:ring-severity-red/25" : undefined
-        }
+        className={cn(
+          "border-border/70 bg-white shadow-none",
+          error && "border-severity-red focus-visible:ring-severity-red/25"
+        )}
       />
       {error && (
         <p className="text-xs text-severity-red" role="alert">
