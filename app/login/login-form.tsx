@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import {
 
 export function LoginForm() {
   const router = useRouter();
+  const reduced = useReducedMotion();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -71,16 +73,29 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full max-w-md p-2 shadow-lift">
       <CardHeader>
-        <CardTitle>Log in</CardTitle>
+        <CardTitle className="text-2xl">Log in</CardTitle>
         <CardDescription>
           Students go to the dashboard; admins go to configuration.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
-          {error && <Alert variant="destructive">{error}</Alert>}
+          <AnimatePresence initial={false}>
+            {error && (
+              <motion.div
+                key="login-error"
+                initial={reduced ? undefined : { opacity: 0, height: 0 }}
+                animate={reduced ? undefined : { opacity: 1, height: "auto" }}
+                exit={reduced ? undefined : { opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                className="overflow-hidden"
+              >
+                <Alert variant="destructive">{error}</Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
@@ -103,7 +118,7 @@ export function LoginForm() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={pending}>
+          <Button type="submit" size="lg" className="w-full" disabled={pending}>
             {pending ? (
               <>
                 <Spinner className="h-4 w-4" />

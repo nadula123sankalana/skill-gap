@@ -8,8 +8,8 @@ import { SeverityBadge } from "@/components/severity-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import { FormAlert } from "@/components/admin/form-alert";
 import {
   Card,
   CardContent,
@@ -56,25 +56,25 @@ export function SeveritySettingsForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="mb-6 flex flex-wrap gap-2">
-          <SeverityBadge severity="GREEN" />
-          <span className="font-mono text-xs text-muted self-center">
-            gap ≤ green max
-          </span>
-          <SeverityBadge severity="YELLOW" />
-          <span className="font-mono text-xs text-muted self-center">
-            ≤ yellow max
-          </span>
-          <SeverityBadge severity="RED" />
-          <span className="font-mono text-xs text-muted self-center">
-            above yellow max
-          </span>
+        <div className="mb-6 space-y-2 rounded-2xl bg-subtle p-4">
+          <div className="flex items-center gap-3">
+            <SeverityBadge severity="GREEN" />
+            <span className="text-xs text-muted">gap ≤ green max</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <SeverityBadge severity="YELLOW" />
+            <span className="text-xs text-muted">≤ yellow max</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <SeverityBadge severity="RED" />
+            <span className="text-xs text-muted">above yellow max</span>
+          </div>
         </div>
 
         <form action={action} className="space-y-4">
-          {state.message && !state.success && (
-            <Alert variant="destructive">{state.message}</Alert>
-          )}
+          <FormAlert
+            message={state.success ? undefined : state.message || undefined}
+          />
           <div className="space-y-1.5">
             <Label htmlFor="greenMaxGap">Green max gap</Label>
             <Input

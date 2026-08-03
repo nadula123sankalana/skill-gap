@@ -1,5 +1,6 @@
 import { collections } from "@/lib/mongodb";
 import { idStr } from "@/lib/types";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { RulesManager } from "./rules-manager";
 
 export const dynamic = "force-dynamic";
@@ -20,13 +21,11 @@ export default async function AdminRulesPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold tracking-tight">
-        Recommendation rules
-      </h1>
-      <p className="mt-2 text-muted">
-        Map gap thresholds to courses, workshops, and projects students can
-        pursue.
-      </p>
+      <AdminPageHeader
+        eyebrow="Guidance"
+        title="Recommendation rules"
+        description="Map gap thresholds to courses, workshops, and projects students can pursue. A lower priority number means the rule is preferred."
+      />
       <div className="mt-8">
         <RulesManager
           skills={skillDocs.map((s) => ({

@@ -5,10 +5,11 @@ import type { ActionResult } from "@/app/actions/auth";
 import { createBenchmark, updateBenchmark } from "@/app/actions/admin";
 import { useActionToast } from "@/hooks/use-action-toast";
 import { EmptyState } from "@/components/empty-state";
+import { FormAlert } from "@/components/admin/form-alert";
+import { StaggerGroup, StaggerItem } from "@/components/motion/stagger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
@@ -18,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Target } from "lucide-react";
+import { nativeSelectClass } from "@/lib/utils";
 
 const initial: ActionResult = { success: false, message: "" };
 
@@ -68,20 +70,17 @@ export function BenchmarksManager({
         </CardHeader>
         <CardContent>
           <form action={createAction} className="grid gap-4 sm:grid-cols-2">
-            {createState.message && (
-              <Alert
-                className="sm:col-span-2"
-                variant={createState.success ? "success" : "destructive"}
-              >
-                {createState.message}
-              </Alert>
-            )}
+            <FormAlert
+              className="sm:col-span-2"
+              message={createState.message || undefined}
+              success={createState.success}
+            />
             <div className="space-y-1.5">
               <Label htmlFor="skillId">Skill</Label>
               <select
                 id="skillId"
                 name="skillId"
-                className="flex h-10 w-full rounded-md border border-input bg-surface px-3 text-sm"
+                className={nativeSelectClass}
                 required
                 defaultValue=""
               >
@@ -124,9 +123,14 @@ export function BenchmarksManager({
       </Card>
 
       <div className="space-y-4">
-        <h2 className="font-display text-xl font-semibold">
-          Existing benchmarks
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-medium">
+            Existing benchmarks
+          </h2>
+          <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-primary">
+            {benchmarks.length} total
+          </span>
+        </div>
         {benchmarks.length === 0 ? (
           <EmptyState
             icon={Target}
@@ -134,9 +138,13 @@ export function BenchmarksManager({
             description="Add a required score per skill and sector to power gap analysis."
           />
         ) : (
-          benchmarks.map((b) => (
-            <BenchmarkEditCard key={b.id} benchmark={b} skills={skills} />
-          ))
+          <StaggerGroup className="space-y-4" stagger={0.05}>
+            {benchmarks.map((b) => (
+              <StaggerItem key={b.id}>
+                <BenchmarkEditCard benchmark={b} skills={skills} />
+              </StaggerItem>
+            ))}
+          </StaggerGroup>
         )}
       </div>
     </div>
@@ -158,19 +166,24 @@ function BenchmarkEditCard({
       <CardContent className="pt-6">
         <form action={action} className="grid gap-4 sm:grid-cols-3">
           <input type="hidden" name="id" value={benchmark.id} />
-          {state.message && (
-            <Alert
-              className="sm:col-span-3"
-              variant={state.success ? "success" : "destructive"}
-            >
-              {state.message}
-            </Alert>
-          )}
+          <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
+            <span className="font-display text-base font-medium text-foreground">
+              {benchmark.skill.name}
+            </span>
+            <span className="rounded-full bg-accent px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
+              {benchmark.sector}
+            </span>
+          </div>
+          <FormAlert
+            className="sm:col-span-3"
+            message={state.message || undefined}
+            success={state.success}
+          />
           <div className="space-y-1.5">
             <Label>Skill</Label>
             <select
               name="skillId"
-              className="flex h-10 w-full rounded-md border border-input bg-surface px-3 text-sm"
+              className={nativeSelectClass}
               defaultValue={benchmark.skillId}
             >
               {skills.map((s) => (

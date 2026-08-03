@@ -1,5 +1,6 @@
 import { collections } from "@/lib/mongodb";
 import { idStr } from "@/lib/types";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { BenchmarksManager } from "./benchmarks-manager";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,11 @@ export default async function AdminBenchmarksPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold tracking-tight">
-        Industry benchmarks
-      </h1>
-      <p className="mt-2 text-muted">
-        Set the target score per skill and sector used in gap calculations.
-      </p>
+      <AdminPageHeader
+        eyebrow="Standards"
+        title="Industry benchmarks"
+        description="Set the target score per skill and sector used in gap calculations. Scores use the same 0–100 scale as normalized assessment results."
+      />
       <div className="mt-8">
         <BenchmarksManager
           skills={skillDocs.map((s) => ({

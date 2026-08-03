@@ -12,7 +12,7 @@ function Alert({
     <div
       role="alert"
       className={cn(
-        "relative w-full rounded-md border px-4 py-3 text-sm",
+        "relative w-full rounded-xl border px-4 py-3 text-sm",
         variant === "default" && "border-border bg-accent text-foreground",
         variant === "destructive" &&
           "border-severity-red/30 bg-severity-red/10 text-severity-red",

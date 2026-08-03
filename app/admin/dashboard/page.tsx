@@ -1,8 +1,12 @@
 import Link from "next/link";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 import { collections } from "@/lib/mongodb";
 import { idStr } from "@/lib/types";
 import { SeverityBadge } from "@/components/severity-badge";
 import { RefreshInsightsButton } from "@/components/refresh-insights-button";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { Reveal } from "@/components/motion/reveal";
+import { StaggerGroup, StaggerItem } from "@/components/motion/stagger";
 import {
   Card,
   CardContent,
@@ -78,20 +82,18 @@ export default async function AdminCohortDashboardPage() {
   );
 
   return (
-    <div className="space-y-10">
-      <div>
-        <h1 className="font-display text-3xl font-semibold tracking-tight">
-          Cohort dashboard
-        </h1>
-        <p className="mt-2 text-muted">
-          Aggregated readiness across {submittedCount} submitted assessment
-          {submittedCount === 1 ? "" : "s"} and {students.length} student
-          {students.length === 1 ? "" : "s"}.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <AdminPageHeader
+        eyebrow="Insights"
+        title="Cohort dashboard"
+        description={`Aggregated readiness across ${submittedCount} submitted assessment${
+          submittedCount === 1 ? "" : "s"
+        } and ${students.length} student${students.length === 1 ? "" : "s"}.`}
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
+      <StaggerGroup className="grid gap-4 sm:grid-cols-2">
+        <StaggerItem>
+        <Card className="h-full">
           <CardHeader>
             <CardTitle className="text-lg">Average score by skill</CardTitle>
             <CardDescription>
@@ -104,24 +106,36 @@ export default async function AdminCohortDashboardPage() {
                 No cohort data yet. Students need to submit assessments.
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-3">
                 {avgRows.map((row) => (
-                  <li
-                    key={row.skillId}
-                    className="flex items-center justify-between gap-3 text-sm"
-                  >
-                    <span>{row.name}</span>
-                    <span className="font-mono text-muted">
-                      {row.meanScore.toFixed(1)}
-                    </span>
+                  <li key={row.skillId} className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-3 text-sm">
+                      <span>{row.name}</span>
+                      <span className="font-semibold text-foreground">
+                        {row.meanScore.toFixed(1)}
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-accent">
+                      <div
+                        className="h-full rounded-full bg-brand-pill"
+                        style={{
+                          width: `${Math.max(
+                            2,
+                            Math.min(100, row.meanScore)
+                          )}%`,
+                        }}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </CardContent>
         </Card>
+        </StaggerItem>
 
-        <Card>
+        <StaggerItem>
+        <Card className="h-full">
           <CardHeader>
             <CardTitle className="text-lg">Most common RED skills</CardTitle>
             <CardDescription>
@@ -136,88 +150,101 @@ export default async function AdminCohortDashboardPage() {
                 {redRanked.map((row) => (
                   <li
                     key={row.skillId}
-                    className="flex items-center justify-between gap-3 text-sm"
+                    className="flex items-center justify-between gap-3 rounded-xl bg-subtle px-3 py-2 text-sm"
                   >
                     <span className="flex items-center gap-2">
                       <SeverityBadge severity="RED" showLabel={false} />
                       {row.name}
                     </span>
-                    <span className="font-mono text-muted">{row.count}</span>
+                    <span className="font-semibold text-foreground">
+                      {row.count}
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
           </CardContent>
         </Card>
-      </div>
+        </StaggerItem>
+      </StaggerGroup>
 
-      <Card>
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3 space-y-0">
-          <div>
-            <CardTitle className="text-lg">Free-text themes</CardTitle>
-            <CardDescription>
+      <Reveal>
+        <Card className="overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-brand-pill px-6 py-3">
+            <p className="flex items-center gap-2 text-sm font-semibold text-white">
+              <Sparkles className="h-4 w-4" aria-hidden />
+              Free-text themes
+            </p>
+            <RefreshInsightsButton />
+          </div>
+          <CardContent className="pt-5">
+            <CardDescription className="mb-3">
               Gemini summary of anonymous free-text responses. Cached until you
               refresh.
             </CardDescription>
-          </div>
-          <RefreshInsightsButton />
-        </CardHeader>
-        <CardContent>
-          {insight ? (
-            <>
-              <p className="text-sm leading-relaxed">{insight.summaryText}</p>
-              <p className="mt-3 font-mono text-xs text-muted">
-                Last refreshed{" "}
-                {new Date(insight.refreshedAt).toLocaleString()}
+            {insight ? (
+              <>
+                <p className="text-sm leading-relaxed">{insight.summaryText}</p>
+                <p className="mt-3 text-xs text-muted">
+                  Last refreshed{" "}
+                  {new Date(insight.refreshedAt).toLocaleString()}
+                </p>
+              </>
+            ) : (
+              <p className="text-sm text-muted">
+                No insights yet. Click &quot;Refresh insights&quot; to generate
+                a summary.
               </p>
-            </>
-          ) : (
-            <p className="text-sm text-muted">
-              No insights yet. Click &quot;Refresh insights&quot; to generate a
-              summary.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </Reveal>
 
       <section>
-        <h2 className="font-display text-xl font-semibold">Students</h2>
-        <p className="mt-1 text-sm text-muted">
-          Open a student to see their full gap profile.
-        </p>
-        <ul className="mt-4 divide-y divide-border rounded-lg border border-border bg-surface">
+        <Reveal>
+          <h2 className="font-display text-xl font-medium">Students</h2>
+          <p className="mt-1 text-sm text-muted">
+            Open a student to see their full gap profile.
+          </p>
+        </Reveal>
+        <StaggerGroup as="ul" className="mt-4 space-y-2.5" stagger={0.04}>
           {studentRows.length === 0 && (
-            <li className="px-4 py-6 text-sm text-muted">
+            <StaggerItem
+              as="li"
+              className="rounded-2xl border border-border bg-white px-5 py-6 text-sm text-muted"
+            >
               No student accounts yet.
-            </li>
+            </StaggerItem>
           )}
           {studentRows.map((s) => (
-            <li
-              key={s.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-            >
-              <div>
-                <p className="font-medium">{s.name}</p>
-                <p className="text-xs text-muted">{s.email}</p>
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                {s.hasAssessment ? (
-                  <span className="font-mono text-xs text-muted">
-                    {s.gapCount} gaps · {s.redCount} RED
+            <StaggerItem as="li" key={s.id}>
+              <Link
+                href={`/admin/students/${s.id}`}
+                className="group flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-white px-5 py-4 shadow-soft transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lift"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-foreground">{s.name}</p>
+                  <p className="text-xs text-muted">{s.email}</p>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  {s.hasAssessment ? (
+                    <span className="text-xs text-muted">
+                      {s.gapCount} gaps · {s.redCount} critical
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-subtle px-2.5 py-1 text-xs text-muted">
+                      No assessment
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 font-medium text-primary">
+                    View
+                    <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
                   </span>
-                ) : (
-                  <span className="text-xs text-muted">No assessment</span>
-                )}
-                <Link
-                  href={`/admin/students/${s.id}`}
-                  className="text-primary hover:underline"
-                >
-                  View
-                </Link>
-              </div>
-            </li>
+                </div>
+              </Link>
+            </StaggerItem>
           ))}
-        </ul>
+        </StaggerGroup>
       </section>
     </div>
   );

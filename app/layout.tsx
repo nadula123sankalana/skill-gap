@@ -1,20 +1,14 @@
 import type { Metadata } from "next";
-import { Sora, Source_Sans_3, IBM_Plex_Mono } from "next/font/google";
+import { Poppins, IBM_Plex_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
 
-const display = Sora({
+const poppins = Poppins({
   subsets: ["latin"],
-  variable: "--font-display",
-  weight: ["500", "600", "700"],
-});
-
-const body = Source_Sans_3({
-  subsets: ["latin"],
-  variable: "--font-body",
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-poppins",
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const mono = IBM_Plex_Mono({
@@ -38,10 +32,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${display.variable} ${body.variable} ${mono.variable} flex min-h-screen flex-col font-sans antialiased`}
-      >
+    <html lang="en" className={`${poppins.variable} ${mono.variable}`}>
+      <body className="flex min-h-screen flex-col font-sans antialiased">
         <Providers>
           <SiteHeader />
           <main className="flex-1">{children}</main>

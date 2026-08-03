@@ -10,6 +10,9 @@ import {
 } from "@/lib/constants";
 import { SeverityBadge } from "@/components/severity-badge";
 import { GapBarChart } from "@/components/gap-bar-chart";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { Reveal } from "@/components/motion/reveal";
+import { StaggerGroup, StaggerItem } from "@/components/motion/stagger";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -62,18 +65,16 @@ export default async function AdminStudentDrilldownPage({
 
   if (!latest) {
     return (
-      <div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/admin/dashboard">← Cohort</Link>
-        </Button>
-        <h1 className="mt-6 font-display text-3xl font-semibold">
-          {student.name}
-        </h1>
-        <p className="mt-2 text-muted">{student.email}</p>
-        <p className="mt-6 text-sm text-muted">
-          This student has not submitted an assessment yet.
-        </p>
-      </div>
+      <AdminPageHeader
+        eyebrow="Student"
+        title={student.name}
+        description={`${student.email} — this student has not submitted an assessment yet.`}
+        action={
+          <Button asChild variant="onDark" size="sm">
+            <Link href="/admin/dashboard">Back to cohort</Link>
+          </Button>
+        }
+      />
     );
   }
 
@@ -136,21 +137,22 @@ export default async function AdminStudentDrilldownPage({
 
   return (
     <div className="space-y-8">
-      <div>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/admin/dashboard">← Cohort</Link>
-        </Button>
-        <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight">
-          {student.name}
-        </h1>
-        <p className="mt-1 text-muted">{student.email}</p>
-        {profile && (
-          <p className="mt-1 text-sm text-muted">
-            {profile.degreeProgram} · Year {profile.year} · {profile.university}
-          </p>
-        )}
-      </div>
+      <AdminPageHeader
+        eyebrow="Student"
+        title={student.name}
+        description={
+          profile
+            ? `${student.email} · ${profile.degreeProgram} · Year ${profile.year} · ${profile.university}`
+            : student.email
+        }
+        action={
+          <Button asChild variant="onDark" size="sm">
+            <Link href="/admin/dashboard">Back to cohort</Link>
+          </Button>
+        }
+      />
 
+      <Reveal>
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Gap profile</CardTitle>
@@ -165,25 +167,27 @@ export default async function AdminStudentDrilldownPage({
           <GapBarChart data={chartData} />
         </CardContent>
       </Card>
+      </Reveal>
 
-      <ul className="space-y-3">
+      <StaggerGroup as="ul" className="space-y-2.5" stagger={0.04}>
         {sortedGaps.map((g) => (
-          <li
+          <StaggerItem
+            as="li"
             key={idStr(g._id)}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface px-4 py-3"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-white px-5 py-4 shadow-soft"
           >
             <div>
-              <p className="font-medium">
+              <p className="font-semibold text-foreground">
                 {skillName.get(idStr(g.skillId)) ?? "Skill"}
               </p>
-              <p className="font-mono text-xs text-muted">
+              <p className="text-xs text-muted">
                 Gap {g.gapScore.toFixed(1)}
               </p>
             </div>
             <SeverityBadge severity={g.severity} />
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
+      </StaggerGroup>
 
       {freeTexts.length > 0 && (
         <Card>
@@ -192,11 +196,11 @@ export default async function AdminStudentDrilldownPage({
           </CardHeader>
           <CardContent className="space-y-4">
             {freeTexts.map((t) => (
-              <div key={idStr(t._id)}>
-                <p className="font-mono text-xs uppercase text-muted">
-                  {t.questionKey}
+              <div key={idStr(t._id)} className="rounded-xl bg-subtle p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted">
+                  {t.questionKey.replace(/_/g, " ")}
                 </p>
-                <p className="mt-1 text-sm">{t.responseText}</p>
+                <p className="mt-2 text-sm leading-relaxed">{t.responseText}</p>
               </div>
             ))}
           </CardContent>

@@ -6,10 +6,11 @@ import { createRule, updateRule, deleteRule } from "@/app/actions/admin";
 import { useActionToast } from "@/hooks/use-action-toast";
 import { ConfirmDeleteButton } from "@/components/confirm-delete-button";
 import { EmptyState } from "@/components/empty-state";
+import { FormAlert } from "@/components/admin/form-alert";
+import { StaggerGroup, StaggerItem } from "@/components/motion/stagger";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Card,
@@ -19,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { BookOpen } from "lucide-react";
+import { nativeSelectClass } from "@/lib/utils";
 
 const initial: ActionResult = { success: false, message: "" };
 
@@ -72,20 +74,17 @@ export function RulesManager({
         </CardHeader>
         <CardContent>
           <form action={createAction} className="grid gap-4 sm:grid-cols-2">
-            {createState.message && (
-              <Alert
-                className="sm:col-span-2"
-                variant={createState.success ? "success" : "destructive"}
-              >
-                {createState.message}
-              </Alert>
-            )}
+            <FormAlert
+              className="sm:col-span-2"
+              message={createState.message || undefined}
+              success={createState.success}
+            />
             <div className="space-y-1.5">
               <Label htmlFor="skillId">Skill</Label>
               <select
                 id="skillId"
                 name="skillId"
-                className="flex h-10 w-full rounded-md border border-input bg-surface px-3 text-sm"
+                className={nativeSelectClass}
                 required
                 defaultValue=""
               >
@@ -129,7 +128,7 @@ export function RulesManager({
               <select
                 id="resourceType"
                 name="resourceType"
-                className="flex h-10 w-full rounded-md border border-input bg-surface px-3 text-sm"
+                className={nativeSelectClass}
                 defaultValue="COURSE"
               >
                 <option value="COURSE">Course</option>
@@ -157,7 +156,12 @@ export function RulesManager({
       </Card>
 
       <div className="space-y-4">
-        <h2 className="font-display text-xl font-semibold">Existing rules</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-medium">Existing rules</h2>
+          <span className="rounded-full bg-accent px-3 py-1 text-xs font-semibold text-primary">
+            {rules.length} total
+          </span>
+        </div>
         {rules.length === 0 ? (
           <EmptyState
             icon={BookOpen}
@@ -165,9 +169,13 @@ export function RulesManager({
             description="Map gap thresholds to courses, workshops, or projects students can pursue."
           />
         ) : (
-          rules.map((rule) => (
-            <RuleEditCard key={rule.id} rule={rule} skills={skills} />
-          ))
+          <StaggerGroup className="space-y-4" stagger={0.05}>
+            {rules.map((rule) => (
+              <StaggerItem key={rule.id}>
+                <RuleEditCard rule={rule} skills={skills} />
+              </StaggerItem>
+            ))}
+          </StaggerGroup>
         )}
       </div>
     </div>
@@ -189,19 +197,27 @@ function RuleEditCard({
       <CardContent className="pt-6">
         <form action={action} className="grid gap-4 sm:grid-cols-2">
           <input type="hidden" name="id" value={rule.id} />
-          {state.message && (
-            <Alert
-              className="sm:col-span-2"
-              variant={state.success ? "success" : "destructive"}
-            >
-              {state.message}
-            </Alert>
-          )}
+          <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+            <span className="font-display text-base font-medium text-foreground">
+              {rule.skill.name}
+            </span>
+            <span className="rounded-full bg-accent px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
+              {rule.resourceType}
+            </span>
+            <span className="rounded-full bg-subtle px-2.5 py-1 text-[0.7rem] font-semibold text-muted">
+              Priority {rule.priority}
+            </span>
+          </div>
+          <FormAlert
+            className="sm:col-span-2"
+            message={state.message || undefined}
+            success={state.success}
+          />
           <div className="space-y-1.5">
             <Label>Skill</Label>
             <select
               name="skillId"
-              className="flex h-10 w-full rounded-md border border-input bg-surface px-3 text-sm"
+              className={nativeSelectClass}
               defaultValue={rule.skillId}
             >
               {skills.map((s) => (
@@ -241,7 +257,7 @@ function RuleEditCard({
             <Label>Type</Label>
             <select
               name="resourceType"
-              className="flex h-10 w-full rounded-md border border-input bg-surface px-3 text-sm"
+              className={nativeSelectClass}
               defaultValue={rule.resourceType}
             >
               <option value="COURSE">Course</option>

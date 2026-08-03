@@ -1,5 +1,6 @@
 import { collections } from "@/lib/mongodb";
 import { idStr } from "@/lib/types";
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { SkillsManager } from "./skills-manager";
 
 export const dynamic = "force-dynamic";
@@ -10,13 +11,11 @@ export default async function AdminSkillsPage() {
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold tracking-tight">
-        Skills
-      </h1>
-      <p className="mt-2 text-muted">
-        Create and edit the skill catalogue used in assessments and gap
-        analysis.
-      </p>
+      <AdminPageHeader
+        eyebrow="Catalogue"
+        title="Skills"
+        description="Create and edit the skill catalogue used in assessments and gap analysis. Deleting a skill also removes its benchmarks, rules, responses, and gaps."
+      />
       <div className="mt-8">
         <SkillsManager
           skills={docs.map((s) => ({

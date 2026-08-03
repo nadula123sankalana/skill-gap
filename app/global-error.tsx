@@ -23,14 +23,14 @@ export default function GlobalError({
           alignItems: "center",
           justifyContent: "center",
           fontFamily: "system-ui, sans-serif",
-          background: "#F2F5F6",
-          color: "#1A2B30",
+          background: "#F6F7FC",
+          color: "#121B2C",
           padding: 24,
         }}
       >
         <div style={{ maxWidth: 420, textAlign: "center" }}>
           <h1 style={{ fontSize: 24, marginBottom: 8 }}>Something went wrong</h1>
-          <p style={{ color: "#5A6B70", marginBottom: 16 }}>
+          <p style={{ color: "#5B6580", marginBottom: 16 }}>
             A server error occurred. If this is a fresh deploy, confirm{" "}
             <code>DATABASE_URL</code>, <code>NEXTAUTH_SECRET</code>, and{" "}
             <code>NEXTAUTH_URL</code> are set in Vercel.
@@ -40,7 +40,7 @@ export default function GlobalError({
               style={{
                 fontFamily: "monospace",
                 fontSize: 12,
-                color: "#5A6B70",
+                color: "#5B6580",
               }}
             >
               Digest: {error.digest}
@@ -51,11 +51,11 @@ export default function GlobalError({
             onClick={reset}
             style={{
               marginTop: 16,
-              background: "#0E5F6B",
+              background: "#3B82F6",
               color: "#fff",
               border: 0,
-              borderRadius: 6,
-              padding: "10px 16px",
+              borderRadius: 999,
+              padding: "10px 20px",
               cursor: "pointer",
             }}
           >
