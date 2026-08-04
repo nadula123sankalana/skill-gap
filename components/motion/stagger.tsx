@@ -39,7 +39,8 @@ export function StaggerGroup({
       className={className}
       variants={reduced ? staticVariants : staggerContainer(stagger, delay)}
       initial="hidden"
-      whileInView="show"
+      // Mount animation — whileInView alone can leave admin lists stuck at opacity 0.
+      animate="show"
       viewport={viewportOnce}
     >
       {children}

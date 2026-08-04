@@ -84,7 +84,7 @@ export default function HomePage() {
       <section className="noise-overlay relative isolate overflow-hidden bg-mesh-hero">
         <div className="grid-overlay pointer-events-none absolute inset-0" aria-hidden />
 
-        <div className="relative mx-auto max-w-5xl px-4 pb-24 pt-14 text-center sm:px-6 sm:pb-32 sm:pt-20">
+        <div className="relative mx-auto max-w-6xl px-4 pb-24 pt-14 text-center sm:px-6 sm:pb-32 sm:pt-20">
           <Reveal preset="fade">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-1.5 text-sm font-medium text-white ring-1 ring-white/25 backdrop-blur">
               <Target className="h-4 w-4" aria-hidden />
@@ -92,8 +92,10 @@ export default function HomePage() {
             </span>
           </Reveal>
 
-          <h1 className="mt-8 font-display text-5xl font-light leading-[1.1] tracking-tight text-white sm:text-6xl lg:text-[3.75rem]">
-            <WordReveal text="Assess, Advance, Achieve: Your Path to Internship Readiness" />
+          <h1 className="mx-auto mt-8 max-w-5xl font-display text-5xl font-light leading-[1.12] tracking-tight text-white sm:text-6xl lg:text-7xl">
+            <WordReveal text="Assess, Advance, Achieve: Your" />
+            <br />
+            <WordReveal text="Path to Internship Readiness" delay={0.35} />
           </h1>
 
           <Reveal preset="up" delay={0.5}>

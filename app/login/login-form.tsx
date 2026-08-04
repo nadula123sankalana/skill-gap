@@ -77,7 +77,7 @@ export function LoginForm() {
         Students go to the dashboard; admins go to configuration.
       </p>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-4">
+      <form onSubmit={onSubmit} method="post" className="mt-8 space-y-4">
         <AnimatePresence initial={false}>
           {error && (
             <motion.div

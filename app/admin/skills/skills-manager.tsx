@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ListPlus } from "lucide-react";
-import { nativeSelectClass } from "@/lib/utils";
+import { cn, nativeSelectClass } from "@/lib/utils";
 
 const initial: ActionResult = { success: false, message: "" };
 
@@ -41,6 +41,15 @@ function Submit({ label }: { label: string }) {
   );
 }
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="text-xs text-severity-red" role="alert">
+      {message}
+    </p>
+  );
+}
+
 type SkillRow = {
   id: string;
   name: string;
@@ -51,6 +60,7 @@ type SkillRow = {
 export function SkillsManager({ skills }: { skills: SkillRow[] }) {
   const [createState, createAction] = useFormState(createSkill, initial);
   useActionToast(createState);
+  const createErrors = createState.success ? undefined : createState.errors;
 
   return (
     <div className="space-y-8">
@@ -66,12 +76,24 @@ export function SkillsManager({ skills }: { skills: SkillRow[] }) {
             <FormAlert
               className="sm:col-span-2"
               message={
-                createState.success ? undefined : createState.message || undefined
+                createState.success
+                  ? undefined
+                  : createState.message || undefined
               }
             />
             <div className="space-y-1.5 sm:col-span-1">
               <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" required />
+              <Input
+                id="name"
+                name="name"
+                required
+                aria-invalid={!!createErrors?.name?.[0]}
+                className={cn(
+                  createErrors?.name?.[0] &&
+                    "border-severity-red focus-visible:ring-severity-red/25"
+                )}
+              />
+              <FieldError message={createErrors?.name?.[0]} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="category">Category</Label>
@@ -84,10 +106,21 @@ export function SkillsManager({ skills }: { skills: SkillRow[] }) {
                 <option value="TECHNICAL">Technical</option>
                 <option value="SOFT">Soft</option>
               </select>
+              <FieldError message={createErrors?.category?.[0]} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" name="description" required />
+              <Textarea
+                id="description"
+                name="description"
+                required
+                aria-invalid={!!createErrors?.description?.[0]}
+                className={cn(
+                  createErrors?.description?.[0] &&
+                    "border-severity-red focus-visible:ring-severity-red/25"
+                )}
+              />
+              <FieldError message={createErrors?.description?.[0]} />
             </div>
             <div>
               <Submit label="Create skill" />
@@ -126,6 +159,7 @@ export function SkillsManager({ skills }: { skills: SkillRow[] }) {
 function SkillEditCard({ skill }: { skill: SkillRow }) {
   const [state, action] = useFormState(updateSkill, initial);
   useActionToast(state);
+  const errors = state.success ? undefined : state.errors;
 
   return (
     <Card>
@@ -138,7 +172,17 @@ function SkillEditCard({ skill }: { skill: SkillRow }) {
           />
           <div className="space-y-1.5">
             <Label>Name</Label>
-            <Input name="name" defaultValue={skill.name} required />
+            <Input
+              name="name"
+              defaultValue={skill.name}
+              required
+              aria-invalid={!!errors?.name?.[0]}
+              className={cn(
+                errors?.name?.[0] &&
+                  "border-severity-red focus-visible:ring-severity-red/25"
+              )}
+            />
+            <FieldError message={errors?.name?.[0]} />
           </div>
           <div className="space-y-1.5">
             <Label>Category</Label>
@@ -150,6 +194,7 @@ function SkillEditCard({ skill }: { skill: SkillRow }) {
               <option value="TECHNICAL">Technical</option>
               <option value="SOFT">Soft</option>
             </select>
+            <FieldError message={errors?.category?.[0]} />
           </div>
           <div className="space-y-1.5 sm:col-span-2">
             <Label>Description</Label>
@@ -157,7 +202,13 @@ function SkillEditCard({ skill }: { skill: SkillRow }) {
               name="description"
               defaultValue={skill.description}
               required
+              aria-invalid={!!errors?.description?.[0]}
+              className={cn(
+                errors?.description?.[0] &&
+                  "border-severity-red focus-visible:ring-severity-red/25"
+              )}
             />
+            <FieldError message={errors?.description?.[0]} />
           </div>
           <div className="flex flex-wrap gap-2 sm:col-span-2">
             <Submit label="Save changes" />

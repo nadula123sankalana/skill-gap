@@ -87,6 +87,7 @@ export type RecommendationDoc = {
   studentId: ObjectId;
   skillId: ObjectId;
   ruleId: ObjectId | null;
+  /** Rule-based focus plan text (shared across this student's recommendations). */
   aiPersonalizedText: string | null;
   status: RecommendationStatus;
   createdAt: Date;

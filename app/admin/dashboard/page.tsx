@@ -179,8 +179,8 @@ export default async function AdminCohortDashboardPage() {
           </div>
           <CardContent className="pt-5">
             <CardDescription className="mb-3">
-              Gemini summary of anonymous free-text responses. Cached until you
-              refresh.
+              Rule-based summary of anonymous free-text responses (keyword
+              frequency + samples). Cached until you refresh.
             </CardDescription>
             {insight ? (
               <>

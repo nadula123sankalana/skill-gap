@@ -1,8 +1,8 @@
 import { ObjectId } from "mongodb";
 import { collections } from "@/lib/mongodb";
 import { MAX_RECOMMENDATIONS_PER_SKILL } from "@/lib/constants";
-import { oid } from "@/lib/types";
-import { personalizeRecommendationsWithGemini } from "@/lib/gemini";
+import { idStr, oid } from "@/lib/types";
+import { buildStudentGuidance } from "@/lib/guidance";
 
 const FALLBACK_MESSAGE =
   "No matching learning resource is configured for this gap yet. An administrator has been flagged to add a recommendation rule.";
@@ -55,6 +55,17 @@ export async function generateRecommendationsForStudent(
 
   const now = new Date();
 
+  const allGaps = await c.skillGaps
+    .find({ studentId: studentOid, assessmentId: assessmentOid })
+    .toArray();
+  const skillIds = allGaps.map((g) => g.skillId);
+  const skills = await c.skills.find({ _id: { $in: skillIds } }).toArray();
+  const skillNameById = new Map(skills.map((s) => [idStr(s._id), s.name]));
+  const guidance = buildStudentGuidance({
+    gaps: allGaps,
+    skillNameById,
+  });
+
   for (const gap of gaps) {
     const rules = await c.recommendationRules
       .find({
@@ -71,7 +82,7 @@ export async function generateRecommendationsForStudent(
         studentId: studentOid,
         skillId: gap.skillId,
         ruleId: null,
-        aiPersonalizedText: null,
+        aiPersonalizedText: guidance,
         status: "PENDING",
         createdAt: now,
       });
@@ -82,7 +93,7 @@ export async function generateRecommendationsForStudent(
           studentId: studentOid,
           skillId: gap.skillId,
           ruleId: rule._id,
-          aiPersonalizedText: null,
+          aiPersonalizedText: guidance,
           status: "PENDING",
           createdAt: now,
         });
@@ -93,9 +104,6 @@ export async function generateRecommendationsForStudent(
   if (toInsert.length > 0) {
     await c.recommendations.insertMany(toInsert);
   }
-
-  // Gemini personalization (non-fatal if it fails)
-  await personalizeRecommendationsWithGemini(studentId, assessmentOid);
 
   return { created: toInsert.length };
 }

@@ -9,7 +9,7 @@ Production-quality Next.js app for assessing student internship readiness agains
 - NextAuth.js (Credentials) — roles: `STUDENT`, `ADMIN`
 - Tailwind CSS + custom design tokens (`DESIGN.md`)
 - Recharts for gap charts
-- Google Gemini (`gemini-2.5-flash`) for personalized text + cohort free-text insights
+- Rule-based skill library guidance (no generative AI)
 
 ## Setup
 
@@ -27,7 +27,6 @@ Edit `.env`:
 | `DATABASE_URL` | MongoDB Atlas URI (include database name, e.g. `/skill-gap`) |
 | `NEXTAUTH_SECRET` | Random secret (`openssl rand -base64 32`) |
 | `NEXTAUTH_URL` | `http://localhost:3000` locally |
-| `GEMINI_API_KEY` | Optional — AI Studio key; app works without it |
 
 ```bash
 npm run db:seed
@@ -51,19 +50,18 @@ Open [http://localhost:3000](http://localhost:3000).
 
 - Student registration, assessment (draft/submit), skip-safe scoring
 - Gap analysis with live severity thresholds (RED / YELLOW / GREEN)
-- Rule-based recommendations + Gemini personalization (graceful fallback)
+- Rule-based recommendations + template focus plans from the skill library
 - Admin CRUD for skills, benchmarks, rules, severity
-- Cohort dashboard with averages, RED rankings, free-text insights, student drill-down
+- Cohort dashboard with averages, RED rankings, free-text keyword insights, student drill-down
 
 ## Vercel deployment
 
 1. Push this repo to GitHub
 2. Import the project in [Vercel](https://vercel.com)
-3. Add environment variables (all required except Gemini):
+3. Add environment variables:
    - `DATABASE_URL` — MongoDB Atlas URI (include DB name, e.g. `/skill-gap`)
    - `NEXTAUTH_SECRET` — long random string (`openssl rand -base64 32`) — **required or the site 500s**
    - `NEXTAUTH_URL` — production URL, e.g. `https://skill-gap-two.vercel.app`
-   - `GEMINI_API_KEY` — optional
 4. In MongoDB Atlas → Network Access, allow `0.0.0.0/0` (or Vercel IPs)
 5. Deploy, then run seed against Atlas if collections are empty (`npm run db:seed` locally with the same `DATABASE_URL`)
 6. Smoke-test: home → register → assessment → admin login

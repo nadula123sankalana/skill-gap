@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 import { collections } from "@/lib/mongodb";
 import { idStr, oid } from "@/lib/types";
-import { summarizeFreeTextThemes } from "@/lib/gemini";
+import { summarizeFreeTextThemes } from "@/lib/guidance";
 
 export async function recomputeCohortSummaries() {
   const c = await collections();
@@ -30,7 +30,8 @@ export async function recomputeCohortSummaries() {
 
   const now = new Date();
   for (const [skillId, scores] of Array.from(bySkill.entries())) {
-    const meanScore = scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
+    const meanScore =
+      scores.reduce((a: number, b: number) => a + b, 0) / scores.length;
     await c.cohortSummaries.updateOne(
       { skillId: oid(skillId) },
       {
@@ -52,10 +53,7 @@ export async function recomputeCohortSummaries() {
 
 export async function refreshAdminInsights() {
   const c = await collections();
-  const summaryText = await summarizeFreeTextThemes();
-  const text =
-    summaryText ??
-    "AI summary is temporarily unavailable. Free-text responses are still stored.";
+  const text = await summarizeFreeTextThemes();
 
   const existing = await c.adminInsights.findOne({});
   if (existing) {

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { collections } from "@/lib/mongodb";
 import { getSession } from "@/lib/auth";
+import { DEFAULT_BENCHMARK_SECTOR } from "@/lib/constants";
 import { oid } from "@/lib/types";
 import type { ActionResult } from "@/app/actions/auth";
 
@@ -16,10 +17,29 @@ async function requireAdmin() {
   return session;
 }
 
+/** Prefer specific field messages over a generic "Validation failed." */
+function zodFailure(error: z.ZodError): ActionResult {
+  const fieldErrors = error.flatten().fieldErrors as Record<string, string[]>;
+  const messages = [
+    ...error.flatten().formErrors,
+    ...Object.values(fieldErrors).flat(),
+  ].filter(Boolean);
+  return {
+    success: false,
+    message: messages[0] ?? "Please check the form and try again.",
+    errors: fieldErrors,
+  };
+}
+
 const skillSchema = z.object({
-  name: z.string().trim().min(2, "Name is required"),
-  category: z.enum(["TECHNICAL", "SOFT"]),
-  description: z.string().trim().min(5, "Description is required"),
+  name: z.string().trim().min(2, "Name must be at least 2 characters"),
+  category: z.enum(["TECHNICAL", "SOFT"], {
+    message: "Choose a valid category",
+  }),
+  description: z
+    .string()
+    .trim()
+    .min(5, "Description must be at least 5 characters"),
 });
 
 export async function createSkill(
@@ -33,22 +53,32 @@ export async function createSkill(
     description: formData.get("description"),
   });
   if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed.",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return zodFailure(parsed.error);
   }
 
-  const { skills } = await collections();
+  const { skills, industryBenchmarks } = await collections();
+  const skillId = new ObjectId();
   await skills.insertOne({
-    _id: new ObjectId(),
+    _id: skillId,
     ...parsed.data,
     createdAt: new Date(),
   });
+  // Charts/gaps need a benchmark — create a default so new skills score immediately.
+  await industryBenchmarks.insertOne({
+    _id: new ObjectId(),
+    skillId,
+    requiredScore: 75,
+    sector: DEFAULT_BENCHMARK_SECTOR,
+    updatedAt: new Date(),
+  });
   revalidatePath("/admin/skills");
+  revalidatePath("/admin/benchmarks");
   revalidatePath("/admin");
-  return { success: true, message: "Skill created." };
+  return {
+    success: true,
+    message:
+      "Skill created with a default 75% Software Engineering benchmark (edit in Benchmarks).",
+  };
 }
 
 export async function updateSkill(
@@ -65,11 +95,7 @@ export async function updateSkill(
     description: formData.get("description"),
   });
   if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed.",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return zodFailure(parsed.error);
   }
 
   const { skills } = await collections();
@@ -106,11 +132,7 @@ export async function createBenchmark(
     sector: formData.get("sector"),
   });
   if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed.",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return zodFailure(parsed.error);
   }
 
   const { industryBenchmarks } = await collections();
@@ -148,11 +170,7 @@ export async function updateBenchmark(
     sector: formData.get("sector"),
   });
   if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed.",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return zodFailure(parsed.error);
   }
 
   const { industryBenchmarks } = await collections();
@@ -203,11 +221,7 @@ export async function createRule(
     priority: formData.get("priority"),
   });
   if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed.",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return zodFailure(parsed.error);
   }
 
   const { recommendationRules } = await collections();
@@ -242,11 +256,7 @@ export async function updateRule(
     priority: formData.get("priority"),
   });
   if (!parsed.success) {
-    return {
-      success: false,
-      message: "Validation failed.",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return zodFailure(parsed.error);
   }
 
   const { recommendationRules } = await collections();
@@ -298,14 +308,7 @@ export async function updateSeverityConfig(
     yellowMaxGap: formData.get("yellowMaxGap"),
   });
   if (!parsed.success) {
-    return {
-      success: false,
-      message:
-        parsed.error.flatten().formErrors[0] ??
-        parsed.error.flatten().fieldErrors.yellowMaxGap?.[0] ??
-        "Validation failed.",
-      errors: parsed.error.flatten().fieldErrors as Record<string, string[]>,
-    };
+    return zodFailure(parsed.error);
   }
 
   const { severityConfig, skillGaps } = await collections();

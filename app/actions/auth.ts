@@ -43,39 +43,61 @@ export async function registerStudent(
 
   const data = parsed.data;
   const email = data.email.toLowerCase();
-  const { users, studentProfiles } = await collections();
 
-  const existing = await users.findOne({ email });
-  if (existing) {
+  try {
+    const { users, studentProfiles } = await collections();
+
+    const existing = await users.findOne({ email });
+    if (existing) {
+      return {
+        success: false,
+        message: "An account with this email already exists.",
+        errors: { email: ["Email already registered"] },
+      };
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, 12);
+    const userId = new ObjectId();
+
+    await users.insertOne({
+      _id: userId,
+      name: data.name,
+      email,
+      passwordHash,
+      role: "STUDENT",
+      createdAt: new Date(),
+    });
+
+    await studentProfiles.insertOne({
+      _id: new ObjectId(),
+      userId,
+      university: data.university,
+      degreeProgram: data.degreeProgram,
+      year: data.year,
+    });
+
+    return {
+      success: true,
+      message: "Account created. You can log in now.",
+    };
+  } catch (err) {
+    console.error("registerStudent failed:", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    if (
+      msg.includes("SSL") ||
+      msg.includes("TLS") ||
+      msg.includes("MongoServerSelection") ||
+      msg.includes("MongoNetwork")
+    ) {
+      return {
+        success: false,
+        message:
+          "Cannot reach the database. Check DATABASE_URL and that your IP is allowed in MongoDB Atlas Network Access.",
+      };
+    }
     return {
       success: false,
-      message: "An account with this email already exists.",
-      errors: { email: ["Email already registered"] },
+      message: "Registration failed. Please try again.",
     };
   }
-
-  const passwordHash = await bcrypt.hash(data.password, 12);
-  const userId = new ObjectId();
-
-  await users.insertOne({
-    _id: userId,
-    name: data.name,
-    email,
-    passwordHash,
-    role: "STUDENT",
-    createdAt: new Date(),
-  });
-
-  await studentProfiles.insertOne({
-    _id: new ObjectId(),
-    userId,
-    university: data.university,
-    degreeProgram: data.degreeProgram,
-    year: data.year,
-  });
-
-  return {
-    success: true,
-    message: "Account created. You can log in now.",
-  };
 }

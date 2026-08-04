@@ -174,7 +174,7 @@ export default async function DashboardPage() {
     .toArray();
   const ruleById = new Map(rules.map((r) => [idStr(r._id), r]));
 
-  const aiText = recommendations.find((r) => r.aiPersonalizedText)
+  const guidanceText = recommendations.find((r) => r.aiPersonalizedText)
     ?.aiPersonalizedText;
 
   const counts = {
@@ -319,18 +319,18 @@ export default async function DashboardPage() {
             <RefreshRecommendationsButton />
           </Reveal>
 
-          {aiText && (
+          {guidanceText && (
             <Reveal className="mt-5">
               <Card className="overflow-hidden border-primary/20">
                 <div className="bg-brand-pill px-6 py-3">
                   <p className="flex items-center gap-2 text-sm font-semibold text-white">
                     <Sparkles className="h-4 w-4" aria-hidden />
-                    Personalized guidance
+                    Focus plan
                   </p>
                 </div>
                 <CardContent className="pt-5">
                   <p className="text-sm leading-relaxed text-foreground">
-                    {aiText}
+                    {guidanceText}
                   </p>
                 </CardContent>
               </Card>

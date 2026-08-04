@@ -1,4 +1,4 @@
-import { MongoClient, type Db, type Collection } from "mongodb";
+import { MongoClient, ServerApiVersion, type Db, type Collection } from "mongodb";
 import type {
   UserDoc,
   StudentProfileDoc,
@@ -30,7 +30,27 @@ function getUri(): string {
 
 function getClientPromise(): Promise<MongoClient> {
   if (!global._mongoClientPromise) {
-    global._mongoClientPromise = new MongoClient(getUri()).connect();
+    const client = new MongoClient(getUri(), {
+      serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+      },
+      // Node 17+ can pick IPv6 and fail TLS to Atlas; force stable family selection.
+      autoSelectFamily: false,
+      family: 4,
+      serverSelectionTimeoutMS: 20_000,
+      connectTimeoutMS: 20_000,
+      maxPoolSize: 10,
+      retryWrites: true,
+      retryReads: true,
+    });
+
+    // Clear cache on failure so the next request can retry (e.g. after IP allowlist).
+    global._mongoClientPromise = client.connect().catch((err) => {
+      global._mongoClientPromise = undefined;
+      throw err;
+    });
   }
   return global._mongoClientPromise;
 }
