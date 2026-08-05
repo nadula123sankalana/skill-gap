@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -11,12 +11,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
+import {
+  consumeReturnTo,
+  getLastEmail,
+  setAuthSessionState,
+} from "@/lib/session-storage";
 
 export function LoginForm() {
   const router = useRouter();
+  const { status, data: session } = useSession();
   const reduced = useReducedMotion();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [emailDefault, setEmailDefault] = useState("");
+  const [remember, setRemember] = useState(false);
+
+  // Restore last email from tab sessionStorage
+  useEffect(() => {
+    setEmailDefault(getLastEmail());
+  }, []);
+
+  // Already signed in → go to the right home
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const dest =
+        session.user.role === "ADMIN"
+          ? "/admin"
+          : consumeReturnTo("/dashboard");
+      router.replace(dest);
+    }
+  }, [status, session, router]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -26,10 +50,12 @@ export function LoginForm() {
     const form = new FormData(e.currentTarget);
     const email = String(form.get("email") ?? "");
     const password = String(form.get("password") ?? "");
+    const keepSignedIn = form.get("remember") === "on";
 
     const result = await signIn("credentials", {
       email,
       password,
+      remember: keepSignedIn ? "true" : "false",
       redirect: false,
     });
 
@@ -45,23 +71,32 @@ export function LoginForm() {
     }
 
     const res = await fetch("/api/auth/session");
-    const session = await res.json();
-    const role = session?.user?.role;
+    const nextSession = await res.json();
+    const role = nextSession?.user?.role as string | undefined;
+    const id = nextSession?.user?.id as string | undefined;
+
+    if (id) {
+      // Tab-scoped client session state (clears when this tab/window closes).
+      setAuthSessionState({
+        id,
+        email: nextSession?.user?.email,
+        role: role ?? "STUDENT",
+        remembered: keepSignedIn,
+        signedInAt: Date.now(),
+      });
+    }
 
     toast({
       title: "Signed in",
-      description:
-        role === "ADMIN"
-          ? "Welcome back — opening admin."
-          : "Welcome back — opening your dashboard.",
+      description: keepSignedIn
+        ? "Session saved on this device for up to 30 days."
+        : "Session is active in this browser tab (clears when you close it).",
       variant: "success",
     });
 
-    if (role === "ADMIN") {
-      router.push("/admin");
-    } else {
-      router.push("/dashboard");
-    }
+    const fallback = role === "ADMIN" ? "/admin" : "/dashboard";
+    const dest = role === "ADMIN" ? "/admin" : consumeReturnTo(fallback);
+    router.push(dest);
     router.refresh();
   }
 
@@ -101,6 +136,8 @@ export function LoginForm() {
             type="email"
             autoComplete="email"
             required
+            defaultValue={emailDefault}
+            key={emailDefault || "email-empty"}
             className="bg-white border-border/70 shadow-none"
           />
         </div>
@@ -115,6 +152,23 @@ export function LoginForm() {
             className="bg-white border-border/70 shadow-none"
           />
         </div>
+
+        <label className="flex cursor-pointer items-start gap-2.5 text-sm text-muted">
+          <input
+            type="checkbox"
+            name="remember"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
+          />
+          <span>
+            <span className="font-medium text-foreground">Keep me signed in</span>
+            <span className="mt-0.5 block text-xs leading-snug">
+              Saves a secure session cookie for 30 days. Leave unchecked for a
+              shorter tab session (clears more quickly when you are done).
+            </span>
+          </span>
+        </label>
 
         <Button type="submit" size="lg" className="w-full" disabled={pending}>
           {pending ? (

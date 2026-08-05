@@ -23,6 +23,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { AssessmentPdfReport } from "@/components/assessment-pdf-report";
 import {
   ArrowUpRight,
   ClipboardList,
@@ -39,6 +40,12 @@ const severityOrder: Record<Severity, number> = {
   RED: 0,
   YELLOW: 1,
   GREEN: 2,
+};
+
+const severityLabel: Record<Severity, string> = {
+  RED: "Critical",
+  YELLOW: "Moderate",
+  GREEN: "On track",
 };
 
 export default async function DashboardPage() {
@@ -200,6 +207,27 @@ export default async function DashboardPage() {
     ? new Date(latest.submittedAt).toLocaleDateString()
     : "recently";
 
+  const reportSkills = sortedGaps.map((g) => {
+    const sid = idStr(g.skillId);
+    return {
+      name: skillName.get(sid) ?? "Skill",
+      score: scoreBySkill.get(sid) ?? 0,
+      benchmark: benchBySkill.get(sid) ?? 0,
+      gap: g.gapScore,
+      status: severityLabel[g.severity],
+      severity: g.severity,
+    };
+  });
+
+  const reportRecommendations = recommendations.map((rec) => {
+    const rule = rec.ruleId ? ruleById.get(idStr(rec.ruleId)) : null;
+    return {
+      skill: skillName.get(idStr(rec.skillId)) ?? "Skill",
+      title: rule?.resourceTitle ?? FALLBACK_MESSAGE,
+      url: rule?.resourceUrl ?? null,
+    };
+  });
+
   return (
     <div className="bg-subtle pb-16">
       <div className="mx-auto max-w-7xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
@@ -237,8 +265,19 @@ export default async function DashboardPage() {
           />
         </StaggerGroup>
 
+        <AssessmentPdfReport
+          studentName={session.user.name ?? "Student"}
+          studentEmail={session.user.email}
+          submittedLabel={submittedLabel}
+          readiness={readiness}
+          counts={counts}
+          skills={reportSkills}
+          guidanceText={guidanceText}
+          recommendations={reportRecommendations}
+        />
+
         <Reveal>
-          <Card>
+          <Card className="no-print">
             <CardHeader>
               <CardTitle className="text-lg">
                 Score vs industry benchmark
@@ -255,7 +294,7 @@ export default async function DashboardPage() {
           </Card>
         </Reveal>
 
-        <section>
+        <section className="no-print">
           <Reveal>
             <h2 className="font-display text-xl font-medium">Skill gaps</h2>
             <p className="mt-1 text-sm text-muted">
@@ -305,7 +344,7 @@ export default async function DashboardPage() {
           </StaggerGroup>
         </section>
 
-        <section>
+        <section className="no-print">
           <Reveal className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 className="font-display text-xl font-medium">

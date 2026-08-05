@@ -3,6 +3,7 @@
 import { signOut } from "next-auth/react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
+import { clearAuthSessionState } from "@/lib/session-storage";
 
 export function SignOutButton() {
   return (
@@ -11,9 +12,10 @@ export function SignOutButton() {
       variant="outline"
       size="sm"
       onClick={() => {
+        clearAuthSessionState();
         toast({
           title: "Signed out",
-          description: "See you next time.",
+          description: "Session cleared on this device.",
           variant: "default",
         });
         void signOut({ callbackUrl: "/" });

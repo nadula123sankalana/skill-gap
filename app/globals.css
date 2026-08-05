@@ -91,3 +91,22 @@
     background-size: 56px 56px;
   }
 }
+
+/* Browser print / PDF fallback — hide chrome and action controls */
+@media print {
+  header,
+  footer,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  main {
+    display: block !important;
+  }
+}
