@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getSession, signIn, useSession } from "next-auth/react";
+import { loginAction } from "@/app/actions/auth";
+import { useSession } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -39,7 +40,7 @@ function callbackPath(): string | null {
 
 export function LoginForm() {
   const router = useRouter();
-  const { status, data: session } = useSession();
+  const { user } = useSession();
   const reduced = useReducedMotion();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -71,64 +72,47 @@ export function LoginForm() {
   }, []);
 
   // Already signed in (revisiting /login) → go to the right home.
-  // A session with no usable role is not navigable: sending it to /dashboard
-  // only bounces off middleware and back to /login.
   useEffect(() => {
-    const role = session?.user?.role;
-    if (status === "authenticated" && (role === "STUDENT" || role === "ADMIN")) {
-      goToHome(role);
+    if (user?.role === "STUDENT" || user?.role === "ADMIN") {
+      goToHome(user.role);
     }
-  }, [status, session, goToHome]);
+  }, [user, goToHome]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPending(true);
     setError(null);
 
+    const form = new FormData(e.currentTarget);
+    const keepSignedIn = form.get("remember") === "on";
+    const callback = callbackPath();
+    if (callback) form.set("callbackUrl", callback);
+
     try {
-      const form = new FormData(e.currentTarget);
-      const email = String(form.get("email") ?? "");
-      const password = String(form.get("password") ?? "");
-      const keepSignedIn = form.get("remember") === "on";
+      // One server action does the whole thing: verify the password, sign the
+      // token, set the cookie, and hand back a relative path. There is no
+      // session endpoint to poll and no absolute URL to resolve, so there is
+      // nothing here that can fail and silently strand the user on /login.
+      const result = await loginAction(null, form);
 
-      const result = await signIn("credentials", {
-        email,
-        password,
-        remember: keepSignedIn ? "true" : "false",
-        redirect: false,
-      });
-
-      if (!result || result.error) {
-        setError("Invalid email or password.");
+      if (!result.success || !result.redirectTo) {
+        setError(result.message);
         toast({
           title: "Sign in failed",
-          description: "Check your email and password, then try again.",
+          description: result.message,
           variant: "destructive",
         });
         setPending(false);
         return;
       }
 
-      // The cookie is already set at this point. Reading the session back is
-      // only needed to know which home to land on, so a failure here must
-      // degrade to the student default rather than abort the whole sign-in.
-      let role: string | undefined;
-      try {
-        const nextSession = await getSession();
-        role = nextSession?.user?.role;
-        if (nextSession?.user?.id) {
-          // Tab-scoped client session state (clears when this tab/window closes).
-          setAuthSessionState({
-            id: nextSession.user.id,
-            email: nextSession.user.email,
-            role: role ?? "STUDENT",
-            remembered: keepSignedIn,
-            signedInAt: Date.now(),
-          });
-        }
-      } catch (err) {
-        console.error("Could not read session after sign in:", err);
-      }
+      setAuthSessionState({
+        id: "",
+        email: String(form.get("email") ?? ""),
+        role: result.redirectTo.startsWith("/admin") ? "ADMIN" : "STUDENT",
+        remembered: keepSignedIn,
+        signedInAt: Date.now(),
+      });
 
       toast({
         title: "Signed in",
@@ -138,10 +122,13 @@ export function LoginForm() {
         variant: "success",
       });
 
-      // Stay in the pending state through the navigation: the dashboard is a
-      // dynamic server route, so clearing it here would flip the button back to
-      // "Sign in" while nothing on screen has changed yet.
-      goToHome(role);
+      // Stays pending through the navigation — the dashboard is a dynamic
+      // server route, so clearing it here would flip the button back while
+      // nothing on screen had changed yet.
+      navigatedRef.current = true;
+      consumeReturnTo("/dashboard");
+      router.replace(result.redirectTo);
+      router.refresh();
     } catch {
       setError("Unable to sign in right now. Please try again.");
       toast({

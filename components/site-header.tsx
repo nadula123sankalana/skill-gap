@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import {
   AnimatePresence,
   motion,
@@ -13,7 +13,6 @@ import {
 } from "framer-motion";
 import { Menu, X, Activity } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
-import { Skeleton } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { springSnappy } from "@/lib/motion";
@@ -27,7 +26,7 @@ const navLinks = [
 ];
 
 export function SiteHeader() {
-  const { data: session, status } = useSession();
+  const { user } = useSession();
   const pathname = usePathname();
   const reduced = useReducedMotion();
   const { scrollY } = useScroll();
@@ -42,7 +41,7 @@ export function SiteHeader() {
     setMenuOpen(false);
   }, [pathname]);
 
-  const authedHref = session?.user?.role === "ADMIN" ? "/admin" : "/dashboard";
+  const authedHref = user?.role === "ADMIN" ? "/admin" : "/dashboard";
 
   return (
     <header
@@ -92,16 +91,14 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {status === "loading" ? (
-            <Skeleton className="h-9 w-32" />
-          ) : session?.user ? (
+          {user ? (
             <>
               <span className="hidden max-w-[10rem] truncate text-sm text-muted xl:inline">
-                {session.user.name}
+                {user.name}
               </span>
               <Button asChild size="sm" variant="secondary">
                 <Link href={authedHref}>
-                  {session.user.role === "ADMIN" ? "Admin" : "Dashboard"}
+                  {user.role === "ADMIN" ? "Admin" : "Dashboard"}
                 </Link>
               </Button>
               <SignOutButton />
@@ -154,7 +151,7 @@ export function SiteHeader() {
                   {link.label}
                 </Link>
               ))}
-              {!session?.user && (
+              {!user && (
                 <Link
                   href="/login"
                   onClick={() => setMenuOpen(false)}
