@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { collections } from "@/lib/mongodb";
 import type { Role } from "@/lib/types";
 import { idStr, oid } from "@/lib/types";
+import { SESSION_COOKIE_NAME, useSecureCookies } from "@/lib/auth-cookies";
 
 declare module "next-auth" {
   interface Session {
@@ -29,8 +30,6 @@ declare module "next-auth/jwt" {
     remember?: boolean;
   }
 }
-
-const isProd = process.env.NODE_ENV === "production";
 
 /** Persistent login (Keep me signed in): 30 days. */
 const PERSISTENT_MAX_AGE = 30 * 24 * 60 * 60;
@@ -66,14 +65,13 @@ export const authOptions: NextAuthOptions = {
   // Production-hardening for the session cookie (JWT stays httpOnly — never in JS).
   cookies: {
     sessionToken: {
-      name: isProd
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
+      // Shared with middleware — see lib/auth-cookies.ts.
+      name: SESSION_COOKIE_NAME,
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: isProd,
+        secure: useSecureCookies,
       },
     },
   },
