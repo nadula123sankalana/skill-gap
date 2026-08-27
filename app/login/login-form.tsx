@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getSession, signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -17,6 +17,26 @@ import {
   setAuthSessionState,
 } from "@/lib/session-storage";
 
+/**
+ * Middleware sends a logged-out deep link here as ?callbackUrl=. Only a
+ * same-origin student path is accepted back — anything else (absolute URL,
+ * protocol-relative //host, an admin path) is discarded so the parameter can't
+ * be used as an open redirect.
+ */
+function callbackPath(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URLSearchParams(window.location.search).get("callbackUrl");
+  if (!raw) return null;
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    if (!url.pathname.startsWith("/dashboard")) return null;
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return null;
+  }
+}
+
 export function LoginForm() {
   const router = useRouter();
   const { status, data: session } = useSession();
@@ -25,22 +45,40 @@ export function LoginForm() {
   const [pending, setPending] = useState(false);
   const [emailDefault, setEmailDefault] = useState("");
   const [remember, setRemember] = useState(false);
+  // Guards the two paths that can navigate away (submit handler and the
+  // already-signed-in effect) so they can never fire competing navigations —
+  // two router calls to the same route in one tick cancel each other and the
+  // page simply stays on /login.
+  const navigatedRef = useRef(false);
+
+  const goToHome = useCallback(
+    (role: string | undefined) => {
+      if (navigatedRef.current) return;
+      navigatedRef.current = true;
+      const dest =
+        role === "ADMIN"
+          ? "/admin"
+          : (callbackPath() ?? consumeReturnTo("/dashboard"));
+      router.replace(dest);
+      router.refresh();
+    },
+    [router]
+  );
 
   // Restore last email from tab sessionStorage
   useEffect(() => {
     setEmailDefault(getLastEmail());
   }, []);
 
-  // Already signed in → go to the right home
+  // Already signed in (revisiting /login) → go to the right home.
+  // A session with no usable role is not navigable: sending it to /dashboard
+  // only bounces off middleware and back to /login.
   useEffect(() => {
-    if (status === "authenticated" && session?.user) {
-      const dest =
-        session.user.role === "ADMIN"
-          ? "/admin"
-          : consumeReturnTo("/dashboard");
-      router.replace(dest);
+    const role = session?.user?.role;
+    if (status === "authenticated" && (role === "STUDENT" || role === "ADMIN")) {
+      goToHome(role);
     }
-  }, [status, session, router]);
+  }, [status, session, goToHome]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,44 +98,50 @@ export function LoginForm() {
         redirect: false,
       });
 
-      if (result?.error) {
+      if (!result || result.error) {
         setError("Invalid email or password.");
         toast({
           title: "Sign in failed",
           description: "Check your email and password, then try again.",
           variant: "destructive",
         });
+        setPending(false);
         return;
       }
 
-      const res = await fetch("/api/auth/session");
-      const nextSession = await res.json();
-      const role = nextSession?.user?.role as string | undefined;
-      const id = nextSession?.user?.id as string | undefined;
-
-      if (id) {
-        // Tab-scoped client session state (clears when this tab/window closes).
-        setAuthSessionState({
-          id,
-          email: nextSession?.user?.email,
-          role: role ?? "STUDENT",
-          remembered: keepSignedIn,
-          signedInAt: Date.now(),
-        });
+      // The cookie is already set at this point. Reading the session back is
+      // only needed to know which home to land on, so a failure here must
+      // degrade to the student default rather than abort the whole sign-in.
+      let role: string | undefined;
+      try {
+        const nextSession = await getSession();
+        role = nextSession?.user?.role;
+        if (nextSession?.user?.id) {
+          // Tab-scoped client session state (clears when this tab/window closes).
+          setAuthSessionState({
+            id: nextSession.user.id,
+            email: nextSession.user.email,
+            role: role ?? "STUDENT",
+            remembered: keepSignedIn,
+            signedInAt: Date.now(),
+          });
+        }
+      } catch (err) {
+        console.error("Could not read session after sign in:", err);
       }
 
       toast({
         title: "Signed in",
         description: keepSignedIn
           ? "Session saved on this device for up to 30 days."
-          : "Session is active in this browser tab (clears when you close it).",
+          : "Session is active for 12 hours on this browser.",
         variant: "success",
       });
 
-      const fallback = role === "ADMIN" ? "/admin" : "/dashboard";
-      const dest = role === "ADMIN" ? "/admin" : consumeReturnTo(fallback);
-      router.push(dest);
-      router.refresh();
+      // Stay in the pending state through the navigation: the dashboard is a
+      // dynamic server route, so clearing it here would flip the button back to
+      // "Sign in" while nothing on screen has changed yet.
+      goToHome(role);
     } catch {
       setError("Unable to sign in right now. Please try again.");
       toast({
@@ -105,7 +149,6 @@ export function LoginForm() {
         description: "The authentication service could not be reached.",
         variant: "destructive",
       });
-    } finally {
       setPending(false);
     }
   }

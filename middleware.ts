@@ -6,20 +6,23 @@ export default withAuth(
     const role = req.nextauth.token?.role;
     const path = req.nextUrl.pathname;
 
+    // A token carrying no recognised role (e.g. one issued before roles existed)
+    // belongs to neither area. Sending it on to /dashboard would bounce it
+    // straight back here, so make it re-authenticate instead of looping.
+    if (role !== "STUDENT" && role !== "ADMIN") {
+      const login = new URL("/login", req.url);
+      login.searchParams.set("callbackUrl", path);
+      return NextResponse.redirect(login);
+    }
+
     // Students only on /dashboard/* — admins are redirected to /admin
     if (path.startsWith("/dashboard") && role !== "STUDENT") {
-      if (role === "ADMIN") {
-        return NextResponse.redirect(new URL("/admin", req.url));
-      }
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(new URL("/admin", req.url));
     }
 
     // Admins only on /admin/* — students are redirected to /dashboard
     if (path.startsWith("/admin") && role !== "ADMIN") {
-      if (role === "STUDENT") {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
-      }
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     return NextResponse.next();
