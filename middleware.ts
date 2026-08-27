@@ -1,6 +1,5 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME } from "@/lib/auth-cookies";
 
 export default withAuth(
   function middleware(req) {
@@ -29,15 +28,8 @@ export default withAuth(
     return NextResponse.next();
   },
   {
-    // Without these two, middleware falls back to NextAuth's own defaults, which
-    // are derived from NEXTAUTH_URL:
-    //   - the cookie name would be the non-prefixed one whenever NEXTAUTH_URL is
-    //     not https, so it would never find the `__Secure-` cookie the route
-    //     handler actually writes in production;
-    //   - the signed-out redirect would go via /api/auth/signin, which builds its
-    //     callbackUrl from NEXTAUTH_URL rather than from the incoming request.
-    // Both are pinned here so a misconfigured NEXTAUTH_URL cannot break routing.
-    cookies: { sessionToken: { name: SESSION_COOKIE_NAME } },
+    // Send signed-out users straight to the app's own login page instead of
+    // bouncing them through /api/auth/signin first.
     pages: { signIn: "/login" },
     callbacks: {
       authorized: ({ token, req }) => {
