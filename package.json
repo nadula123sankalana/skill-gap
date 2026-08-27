@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx scripts/seed.ts",
+    "db:demo-skills": "tsx scripts/seed-demo-skills.ts",
     "db:indexes": "tsx scripts/ensure-indexes.ts"
   },
   "dependencies": {

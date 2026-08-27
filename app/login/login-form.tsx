@@ -47,57 +47,67 @@ export function LoginForm() {
     setPending(true);
     setError(null);
 
-    const form = new FormData(e.currentTarget);
-    const email = String(form.get("email") ?? "");
-    const password = String(form.get("password") ?? "");
-    const keepSignedIn = form.get("remember") === "on";
+    try {
+      const form = new FormData(e.currentTarget);
+      const email = String(form.get("email") ?? "");
+      const password = String(form.get("password") ?? "");
+      const keepSignedIn = form.get("remember") === "on";
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      remember: keepSignedIn ? "true" : "false",
-      redirect: false,
-    });
+      const result = await signIn("credentials", {
+        email,
+        password,
+        remember: keepSignedIn ? "true" : "false",
+        redirect: false,
+      });
 
-    if (result?.error) {
-      setError("Invalid email or password.");
+      if (result?.error) {
+        setError("Invalid email or password.");
+        toast({
+          title: "Sign in failed",
+          description: "Check your email and password, then try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const res = await fetch("/api/auth/session");
+      const nextSession = await res.json();
+      const role = nextSession?.user?.role as string | undefined;
+      const id = nextSession?.user?.id as string | undefined;
+
+      if (id) {
+        // Tab-scoped client session state (clears when this tab/window closes).
+        setAuthSessionState({
+          id,
+          email: nextSession?.user?.email,
+          role: role ?? "STUDENT",
+          remembered: keepSignedIn,
+          signedInAt: Date.now(),
+        });
+      }
+
+      toast({
+        title: "Signed in",
+        description: keepSignedIn
+          ? "Session saved on this device for up to 30 days."
+          : "Session is active in this browser tab (clears when you close it).",
+        variant: "success",
+      });
+
+      const fallback = role === "ADMIN" ? "/admin" : "/dashboard";
+      const dest = role === "ADMIN" ? "/admin" : consumeReturnTo(fallback);
+      router.push(dest);
+      router.refresh();
+    } catch {
+      setError("Unable to sign in right now. Please try again.");
       toast({
         title: "Sign in failed",
-        description: "Check your email and password, then try again.",
+        description: "The authentication service could not be reached.",
         variant: "destructive",
       });
+    } finally {
       setPending(false);
-      return;
     }
-
-    const res = await fetch("/api/auth/session");
-    const nextSession = await res.json();
-    const role = nextSession?.user?.role as string | undefined;
-    const id = nextSession?.user?.id as string | undefined;
-
-    if (id) {
-      // Tab-scoped client session state (clears when this tab/window closes).
-      setAuthSessionState({
-        id,
-        email: nextSession?.user?.email,
-        role: role ?? "STUDENT",
-        remembered: keepSignedIn,
-        signedInAt: Date.now(),
-      });
-    }
-
-    toast({
-      title: "Signed in",
-      description: keepSignedIn
-        ? "Session saved on this device for up to 30 days."
-        : "Session is active in this browser tab (clears when you close it).",
-      variant: "success",
-    });
-
-    const fallback = role === "ADMIN" ? "/admin" : "/dashboard";
-    const dest = role === "ADMIN" ? "/admin" : consumeReturnTo(fallback);
-    router.push(dest);
-    router.refresh();
   }
 
   return (
