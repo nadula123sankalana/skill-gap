@@ -172,7 +172,9 @@ export function LoginForm() {
             className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/30"
           />
           <span>
-            <span className="font-medium text-foreground">Keep me signed in</span>
+            <span className="font-medium text-foreground">
+              Keep me signed in
+            </span>
             <span className="mt-0.5 block text-xs leading-snug">
               Saves a secure session cookie for 30 days. Leave unchecked for a
               shorter tab session (clears more quickly when you are done).
@@ -193,7 +195,10 @@ export function LoginForm() {
 
         <p className="text-center text-sm text-muted">
           New student?{" "}
-          <Link href="/register" className="font-medium text-primary hover:underline">
+          <Link
+            href="/register"
+            className="font-medium text-primary hover:underline"
+          >
             Register
           </Link>
         </p>
