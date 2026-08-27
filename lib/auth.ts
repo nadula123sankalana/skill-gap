@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { collections } from "@/lib/mongodb";
 import type { Role } from "@/lib/types";
 import { idStr, oid } from "@/lib/types";
+import { SESSION_COOKIE_NAME, useSecureCookies } from "@/lib/auth-cookies";
 
 declare module "next-auth" {
   interface Session {
@@ -37,6 +38,16 @@ const SESSION_MAX_AGE = 12 * 60 * 60;
 
 export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
+  /**
+   * Overrides NextAuth's default, which infers this from NEXTAUTH_URL starting
+   * with "https://". That inference is the single point of failure this app kept
+   * tripping over: a wrong or missing NEXTAUTH_URL silently downgraded every
+   * cookie name (`__Secure-`/`__Host-` prefixes) and dropped the Secure flag,
+   * leaving middleware unable to find the session. NODE_ENV is set by the build
+   * and cannot drift, so all cookies stay consistent no matter what the
+   * environment says. See lib/auth-cookies.ts.
+   */
+  useSecureCookies,
   session: {
     strategy: "jwt",
     // Cookie upper bound; jwt.encode() below shortens the token itself when
@@ -60,6 +71,19 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+  },
+  // Production-hardening for the session cookie (JWT stays httpOnly — never in JS).
+  cookies: {
+    sessionToken: {
+      // Shared with middleware — see lib/auth-cookies.ts.
+      name: SESSION_COOKIE_NAME,
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: useSecureCookies,
+      },
+    },
   },
   providers: [
     CredentialsProvider({
