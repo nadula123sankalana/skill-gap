@@ -13,6 +13,7 @@ import type {
   SeverityConfigDoc,
   CohortSummaryDoc,
   AdminInsightDoc,
+  InternshipRoleDoc,
 } from "@/lib/types";
 
 declare global {
@@ -86,6 +87,7 @@ export async function collections() {
     severityConfig: db.collection<SeverityConfigDoc>("severityConfig"),
     cohortSummaries: db.collection<CohortSummaryDoc>("cohortSummaries"),
     adminInsights: db.collection<AdminInsightDoc>("adminInsights"),
+    internshipRoles: db.collection<InternshipRoleDoc>("internshipRoles"),
   };
 }
 
@@ -113,6 +115,8 @@ export async function ensureIndexes(): Promise<void> {
     c.skillGaps.createIndex({ studentId: 1 }),
     c.recommendations.createIndex({ studentId: 1 }),
     c.cohortSummaries.createIndex({ skillId: 1 }, { unique: true }),
+    c.internshipRoles.createIndex({ title: 1 }, { unique: true }),
+    c.internshipRoles.createIndex({ priority: 1 }),
   ]);
 }
 

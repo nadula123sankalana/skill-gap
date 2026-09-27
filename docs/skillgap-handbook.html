@@ -1,0 +1,695 @@
+<title>SkillGap Handbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* Light palette — taken from the app's own tailwind tokens so the guide and
+     the product read as one system. */
+  :root {
+    --ground: #F6F7FC;
+    --surface: #FFFFFF;
+    --surface-2: #EEF2FE;
+    --ink: #121B2C;
+    --ink-soft: #2A3854;
+    --muted: #5B6580;
+    --border: #E5E9F2;
+    --border-strong: #CFD6E6;
+    --primary: #3B82F6;
+    --student: #11A385;
+    --admin: #4F46E5;
+    --student-on: #04231C;
+    --admin-on: #FFFFFF;
+    --red: #E5484D;
+    --yellow: #B4780E;
+    --green: #17B981;
+    --shadow: 0 1px 2px rgba(18, 27, 44, .05), 0 8px 24px -12px rgba(18, 27, 44, .12);
+    --lane: var(--primary);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0B1220;
+      --surface: #121B2C;
+      --surface-2: #1B2740;
+      --ink: #E9EDF7;
+      --ink-soft: #C3CBDD;
+      --muted: #9AA5BF;
+      --border: #26324B;
+      --border-strong: #384664;
+      --primary: #6BA5FB;
+      --student: #2FD3AB;
+      --admin: #9A8CF7;
+      --student-on: #04231C;
+      --admin-on: #16113A;
+      --red: #FF7A7E;
+      --yellow: #E9A93A;
+      --green: #3FD69E;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -14px rgba(0, 0, 0, .7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0B1220;
+    --surface: #121B2C;
+    --surface-2: #1B2740;
+    --ink: #E9EDF7;
+    --ink-soft: #C3CBDD;
+    --muted: #9AA5BF;
+    --border: #26324B;
+    --border-strong: #384664;
+    --primary: #6BA5FB;
+    --student: #2FD3AB;
+    --admin: #9A8CF7;
+    --student-on: #04231C;
+    --admin-on: #16113A;
+    --red: #FF7A7E;
+    --yellow: #E9A93A;
+    --green: #3FD69E;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 28px -14px rgba(0, 0, 0, .7);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  h1, h2, h3 {
+    font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0;
+    line-height: 1.2;
+  }
+  h1 { font-size: clamp(2rem, 1.4rem + 2.4vw, 2.9rem); }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.0625rem; font-weight: 500; }
+  p { margin: 0; max-width: 68ch; }
+
+  code, .mono {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.875em;
+  }
+  code {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.1em 0.4em;
+    color: var(--ink-soft);
+    word-break: break-word;
+  }
+
+  a { color: var(--primary); text-underline-offset: 2px; }
+  a:focus-visible, summary:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .eyebrow {
+    font-family: Poppins, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ---------- header ---------- */
+  .masthead { display: flex; flex-direction: column; gap: 1rem; }
+  .lockup { display: flex; align-items: center; gap: .7rem; }
+  .mark {
+    width: 2.15rem; height: 2.15rem; border-radius: .7rem;
+    background: linear-gradient(135deg, var(--student), var(--primary) 55%, var(--admin));
+    display: grid; place-items: center; flex: none;
+  }
+  .mark svg { width: 1.05rem; height: 1.05rem; color: #fff; }
+  .lockup span {
+    font-family: Poppins, sans-serif; font-weight: 600;
+    font-size: 1.0625rem; letter-spacing: -0.01em;
+  }
+  .lede { font-size: 1.0625rem; color: var(--ink-soft); max-width: 60ch; }
+  .note { font-size: .9375rem; color: var(--muted); }
+  .addressbar {
+    display: inline-flex; align-items: center; gap: .6rem;
+    align-self: flex-start;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: .5rem .95rem .5rem .8rem;
+    box-shadow: var(--shadow);
+  }
+  .addressbar .dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--green); flex: none; }
+
+  /* ---------- shared blocks ---------- */
+  section { display: flex; flex-direction: column; gap: 1.25rem; }
+  .section-head { display: flex; flex-direction: column; gap: .5rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    box-shadow: var(--shadow);
+  }
+
+  .split { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 46rem) { .split { grid-template-columns: 1fr; } }
+
+  /* role identity: teal = student, indigo = admin. The hue is the wayfinding. */
+  .lane-student { --lane: var(--student); --lane-on: var(--student-on); }
+  .lane-admin   { --lane: var(--admin);   --lane-on: var(--admin-on); }
+
+  .role-card { border-top: 3px solid var(--lane); display: flex; flex-direction: column; gap: .6rem; }
+  .role-card h3 { color: var(--lane); font-weight: 600; font-size: 1.125rem; }
+  .role-card p { font-size: .9375rem; color: var(--muted); }
+  .role-card .lands {
+    margin-top: .3rem; font-size: .875rem; color: var(--ink-soft);
+  }
+
+  .lane-title { display: flex; align-items: center; gap: .7rem; }
+  .lane-title::before {
+    content: ""; width: .55rem; height: 1.5rem; border-radius: 3px;
+    background: var(--lane); flex: none;
+  }
+
+  /* ---------- numbered steps (a real sequence, hence numbers) ---------- */
+  ol.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .75rem; counter-reset: step; }
+  ol.steps > li {
+    counter-increment: step;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.15rem 1.35rem 1.15rem 3.6rem;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  ol.steps > li::before {
+    content: counter(step);
+    position: absolute; left: 1.2rem; top: 1.15rem;
+    width: 1.6rem; height: 1.6rem; border-radius: 50%;
+    background: var(--lane); color: var(--lane-on);
+    font-family: "IBM Plex Mono", monospace; font-size: .8125rem; font-weight: 500;
+    display: grid; place-items: center;
+  }
+
+  ol.steps h3 { margin-bottom: .3rem; }
+  ol.steps p { font-size: .9375rem; color: var(--muted); }
+  ol.steps p + p { margin-top: .5rem; }
+
+  .field-list { margin: .7rem 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: .4rem; }
+  .field-list li {
+    font-size: .8125rem; color: var(--ink-soft);
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: .2rem .55rem;
+  }
+
+  .callout {
+    border-left: 3px solid var(--lane);
+    background: var(--surface-2);
+    border-radius: 0 8px 8px 0;
+    padding: .8rem 1rem;
+    font-size: .9375rem;
+    color: var(--ink-soft);
+    margin-top: .8rem;
+  }
+  .callout strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- tables ---------- */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; min-width: 30rem; }
+  th, td { text-align: left; padding: .7rem 1.1rem; border-bottom: 1px solid var(--border); font-size: .9375rem; }
+  th {
+    font-family: Poppins, sans-serif; font-size: .6875rem; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    background: var(--surface-2);
+  }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: .4rem;
+    font-size: .8125rem; font-weight: 500;
+    border-radius: 999px; padding: .2rem .6rem;
+    border: 1px solid currentColor;
+  }
+  .pill::before { content: ""; width: .45rem; height: .45rem; border-radius: 50%; background: currentColor; }
+  .pill.red { color: var(--red); }
+  .pill.yellow { color: var(--yellow); }
+  .pill.green { color: var(--green); }
+
+  /* ---------- troubleshooting ---------- */
+  details {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: .85rem 1.1rem; box-shadow: var(--shadow);
+  }
+  details + details { margin-top: .6rem; }
+  summary {
+    cursor: pointer; font-weight: 500; font-size: .9375rem;
+    list-style: none; display: flex; align-items: center; gap: .6rem;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::before {
+    content: "+"; font-family: "IBM Plex Mono", monospace; color: var(--primary);
+    font-size: 1rem; line-height: 1; flex: none;
+  }
+  details[open] summary::before { content: "\2212"; }
+  details p { margin-top: .6rem; font-size: .9375rem; color: var(--muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 1.4rem;
+    font-size: .8125rem;
+    color: var(--muted);
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="lockup">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"/></svg>
+      </span>
+      <span>SkillGap Assess</span>
+    </div>
+    <p class="eyebrow">User handbook</p>
+    <h1>How to use SkillGap Assess</h1>
+    <p class="lede">
+      SkillGap Assess helps students find out how ready they are for an internship.
+      You rate your own skills, and the app shows you which ones are strong, which
+      ones need work, and what to study next. This guide walks you through it from
+      the very beginning.
+    </p>
+    <div class="addressbar">
+      <span class="dot" aria-hidden="true"></span>
+      <span class="mono">https://skill-gap-two.vercel.app</span>
+    </div>
+    <p class="note">
+      Type that address into any web browser — Chrome, Edge or Safari — on a computer,
+      tablet or phone. There is nothing to download or install.
+    </p>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <h2>First, which kind of account do you have?</h2>
+      <p>
+        There are two kinds, and each one sees a completely different part of the app.
+        An account is <strong>either</strong> one <strong>or</strong> the other — never
+        both. That is why there is no button to switch between them. Find yourself below,
+        then read that section.
+      </p>
+    </div>
+    <div class="split">
+      <div class="card role-card lane-student">
+        <h3>Student</h3>
+        <p>
+          You want to check your own internship readiness. You create your own account,
+          and you only ever see your own results.
+        </p>
+        <p class="lands"><strong>Read the green section below.</strong></p>
+      </div>
+      <div class="card role-card lane-admin">
+        <h3>Administrator</h3>
+        <p>
+          You are staff. You decide which skills are measured, what counts as a good
+          score, and what advice students receive. You can see everyone's results.
+        </p>
+        <p class="lands"><strong>Read the purple section below.</strong></p>
+      </div>
+    </div>
+    <div class="card">
+      <p class="note">
+        <strong>Not sure which you are?</strong> If nobody has given you a username and
+        password, you are a student — go ahead and create your own account.
+      </p>
+    </div>
+  </section>
+
+  <section class="lane-student">
+    <div class="section-head">
+      <h2 class="lane-title">For students</h2>
+      <p>Six steps, from creating an account to reading your results.</p>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <h3>Create your account</h3>
+        <p>
+          Open the website. In the top-right corner, click the
+          <strong>Get started free</strong> button.
+        </p>
+        <p>
+          You will be asked for a few details across two short screens: first your name,
+          email address, and a password you choose, then a little about your studies so
+          staff can group you with students on similar courses.
+        </p>
+        <p>Your password needs to be at least 8 characters long.</p>
+        <ul class="field-list">
+          <li>Your full name</li><li>Email address</li><li>Password (8+ characters)</li>
+          <li>Your university</li><li>Your course</li><li>Which year you are in</li>
+        </ul>
+        <div class="callout">
+          Each email address can only be used once. If the app says an account with that
+          email already exists, you have signed up before — skip to step 2 and log in instead.
+        </div>
+      </li>
+
+      <li>
+        <h3>Log in</h3>
+        <p>
+          Click <strong>Log in</strong> at the top of the page, type your email address and
+          password, then click the blue <strong>Sign in</strong> button.
+        </p>
+        <p>
+          You will arrive at your <strong>dashboard</strong> — your personal home page in
+          the app. You can get back to it at any time by clicking
+          <strong>Dashboard</strong> at the top of the page.
+        </p>
+        <div class="callout">
+          There is a tick box called <strong>Keep me signed in</strong>. Tick it on your own
+          laptop or phone and you will stay logged in for 30 days. Leave it unticked on a
+          shared or library computer — you will then be logged out after 12 hours, which is
+          safer.
+        </div>
+      </li>
+
+      <li>
+        <h3>Rate your skills</h3>
+        <p>
+          On your dashboard, click <strong>Start assessment</strong>. You will see a list of
+          skills. For each one, say how good you think you are:
+          <strong>Very Good</strong>, <strong>Good</strong>, <strong>Average</strong> or
+          <strong>Poor</strong>. There is also a <strong>Skip</strong> option.
+        </p>
+        <p>
+          At the end there are two questions to answer in your own words: what kind of
+          internship you are hoping for, and what you find hardest at the moment. A sentence
+          or two is plenty.
+        </p>
+        <div class="callout">
+          <strong>Skipping is completely safe.</strong> If you have never used a skill and
+          genuinely cannot judge it, choose Skip. The app leaves it out altogether — it does
+          <em>not</em> count it as zero and it will not pull your results down. Skipping is
+          better than guessing.
+        </div>
+      </li>
+
+      <li>
+        <h3>You can stop and finish later</h3>
+        <p>
+          Click <strong>Save draft</strong> at any point. Your answers are kept, but nothing
+          is worked out yet. You can close the page, shut your laptop, come back next week,
+          and everything you typed will still be there waiting for you.
+        </p>
+      </li>
+
+      <li>
+        <h3>Send it in</h3>
+        <p>
+          When you have finished, click <strong>Submit assessment</strong>. You need to have
+          rated at least one skill. Your results appear straight away.
+        </p>
+        <div class="callout">
+          Once you submit, that set of answers is locked and cannot be edited. That is on
+          purpose — it keeps a fair record of how you were doing at the time. When you have
+          improved and want a fresh picture, simply do a new assessment. Your dashboard
+          always shows your most recent one.
+        </div>
+      </li>
+
+      <li>
+        <h3>Read your results</h3>
+        <p>
+          At the top you will see your <strong>internship readiness</strong> as a
+          percentage — roughly, how close your scores are to what employers expect.
+          Underneath is a count of how many skills are doing well and how many need work.
+        </p>
+        <p>
+          Then comes a chart comparing your score on each skill against the target score,
+          and a list of your skills with the most urgent ones first. Each one is coloured
+          red, amber or green. The table further down explains exactly what those colours mean.
+        </p>
+        <p>
+          Last are your <strong>recommendations</strong> — courses, articles or videos your
+          university has chosen for the skills you are weakest at — and a
+          <strong>focus plan</strong> telling you where to start. Click
+          <strong>Download PDF report</strong> to save it all as a file you can email to a
+          tutor or careers adviser.
+        </p>
+        <div class="callout">
+          If you see <strong>&ldquo;Needs admin review&rdquo;</strong>, it simply means staff
+          have not added any study material for that skill yet. There is nothing wrong with
+          your account. Click <strong>Refresh recommendations</strong> once they have.
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section class="lane-admin">
+    <div class="section-head">
+      <h2 class="lane-title">For administrators</h2>
+      <p>
+        Administrator accounts cannot be created from the website — whoever set the system
+        up creates them for you. The system comes with one ready-made admin account.
+      </p>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <h3>Log in</h3>
+        <p>
+          Use the same <strong>Log in</strong> page as students; there is no separate staff
+          address. The app recognises your account and takes you to the admin area
+          automatically.
+        </p>
+        <p>The account the system comes with is:</p>
+        <ul class="field-list">
+          <li class="mono">admin@university.edu</li>
+          <li class="mono">Admin123!</li>
+        </ul>
+        <div class="callout">
+          <strong>Please change this password before real students start using the system.</strong>
+          It is written down in the system's setup files, so anyone with a copy of them can
+          read it.
+        </div>
+      </li>
+
+      <li>
+        <h3>Choose which skills are measured</h3>
+        <p>
+          Click <strong>Skills</strong> in the menu on the left. Whatever you list here is
+          exactly what students are asked to rate. Nothing is fixed in advance — if a skill
+          is not on this list, nobody will be asked about it.
+        </p>
+      </li>
+
+      <li>
+        <h3>Set the target for each skill</h3>
+        <p>
+          Click <strong>Benchmarks</strong>. For every skill, enter the score you would
+          expect from someone ready for an internship, out of 100. The app compares each
+          student against this number, and the difference is what it calls their gap.
+        </p>
+        <div class="callout">
+          If a skill has no target, the app cannot work out a gap for it, so it quietly
+          disappears from student results. Give every skill that matters a target.
+        </div>
+      </li>
+
+      <li>
+        <h3>Add the study material</h3>
+        <p>
+          Click <strong>Rules</strong>. Here you link a course, article or video to a skill,
+          and say how far behind a student has to be before they are shown it. That way a
+          small weakness and a serious one can point to different material.
+        </p>
+      </li>
+
+      <li>
+        <h3>Decide what counts as good and bad</h3>
+        <p>
+          Click <strong>Severity settings</strong>. These two numbers set where red, amber
+          and green begin and end for everybody. Change them and every student's results are
+          re-coloured automatically next time they look — you do not need to ask anyone to
+          redo their assessment.
+        </p>
+      </li>
+
+      <li>
+        <h3>See how everyone is doing</h3>
+        <p>
+          Click <strong>Cohort</strong> for the whole picture: average scores, which skills
+          most students struggle with, how many have taken part, and common themes from
+          their written answers. From there you can click any individual student to see
+          their full results.
+        </p>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Where the numbers come from</h2>
+      <p>Worth reading whoever you are — this explains every figure and colour in the app.</p>
+    </div>
+
+    <h3>What each answer is worth</h3>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">You choose</th><th scope="col">Worth</th><th scope="col">What happens</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Very Good</td><td class="num">100</td><td>Counted</td></tr>
+          <tr><td>Good</td><td class="num">75</td><td>Counted</td></tr>
+          <tr><td>Average</td><td class="num">50</td><td>Counted</td></tr>
+          <tr><td>Poor</td><td class="num">25</td><td>Counted — even the lowest answer is well above zero</td></tr>
+          <tr><td>Skip</td><td class="num">—</td><td>Ignored completely. Never counts against you.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What the colours mean</h3>
+    <p>
+      Take the target score for a skill, subtract your score, and what is left is the gap.
+      The bigger the gap, the more attention that skill needs. The numbers below are the
+      usual settings — your university can change them.
+    </p>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Colour</th><th scope="col">How far below target</th><th scope="col">What it means for you</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill green">Green</span></td>
+            <td class="num">0 – 10</td>
+            <td>You are where you need to be. Nothing to do.</td>
+          </tr>
+          <tr>
+            <td><span class="pill yellow">Amber</span></td>
+            <td class="num">10 – 25</td>
+            <td>A little short. Worth some practice.</td>
+          </tr>
+          <tr>
+            <td><span class="pill red">Red</span></td>
+            <td class="num">more than 25</td>
+            <td>A long way short. Start with these.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Words you will see in the app</h3>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th scope="col">Word</th><th scope="col">What it actually means</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Dashboard</strong></td><td>Your personal home page inside the app.</td></tr>
+          <tr><td><strong>Assessment</strong></td><td>The set of questions where you rate your own skills.</td></tr>
+          <tr><td><strong>Draft</strong></td><td>A half-finished assessment, saved but not yet sent in.</td></tr>
+          <tr><td><strong>Benchmark</strong></td><td>The score employers expect for a skill. Your target.</td></tr>
+          <tr><td><strong>Gap</strong></td><td>How far your score sits below that target.</td></tr>
+          <tr><td><strong>Severity</strong></td><td>How serious a gap is, shown as red, amber or green.</td></tr>
+          <tr><td><strong>Cohort</strong></td><td>All the students using the system, looked at together.</td></tr>
+          <tr><td><strong>Focus plan</strong></td><td>A short summary of what to work on first.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>If something does not look right</h2>
+    </div>
+
+    <details>
+      <summary>I have logged in but I cannot find the staff pages</summary>
+      <p>
+        Your account is a student account, and students cannot open the staff area — the app
+        sends you back to your own dashboard. If you need staff access, ask whoever looks
+        after the system to set you up with an administrator account.
+      </p>
+    </details>
+
+    <details>
+      <summary>I am staff and it keeps sending me away from the student dashboard</summary>
+      <p>
+        That is meant to happen. Administrator accounts do not take assessments, so the app
+        takes you to the admin area instead. To see what a student sees, open the
+        <strong>Cohort</strong> page and click their name.
+      </p>
+    </details>
+
+    <details>
+      <summary>I was logged out on my own</summary>
+      <p>
+        You are logged out after 12 hours, unless you ticked <strong>Keep me signed in</strong>,
+        which keeps you signed in for 30 days. Just log in again — nothing is lost, and a
+        saved draft will still be there.
+      </p>
+    </details>
+
+    <details>
+      <summary>I have forgotten my password</summary>
+      <p>
+        There is no &ldquo;forgot password&rdquo; link at the moment. Contact whoever looks
+        after the system and they can set a new password for you.
+      </p>
+    </details>
+
+    <details>
+      <summary>My dashboard says I have not done an assessment yet</summary>
+      <p>
+        Saving a draft is not the same as sending it in. Open your assessment again and click
+        <strong>Submit assessment</strong> at the bottom. Your results will then appear.
+      </p>
+    </details>
+
+    <details>
+      <summary>The assessment page says there are no skills</summary>
+      <p>
+        Staff have not added any skills yet, so there is nothing to rate. There is nothing
+        wrong with your account and nothing for you to do — check back once they have set it up.
+      </p>
+    </details>
+
+    <details>
+      <summary>My results look out of date</summary>
+      <p>
+        Your dashboard always shows your most recent completed assessment. If staff have
+        changed the targets or added new study material since you finished, click
+        <strong>Refresh recommendations</strong> to bring your advice up to date.
+      </p>
+    </details>
+  </section>
+
+  <footer>
+    SkillGap Assess — check how ready you are for an internship, see which skills need work,
+    and get advice on what to study next. Sign in at
+    <span class="mono">skill-gap-two.vercel.app</span>.
+  </footer>
+
+</div>

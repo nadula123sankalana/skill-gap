@@ -9,6 +9,7 @@
     "lint": "next lint",
     "db:seed": "tsx scripts/seed.ts",
     "db:demo-skills": "tsx scripts/seed-demo-skills.ts",
+    "db:seed-roles": "tsx scripts/seed-internship-roles-cli.ts",
     "db:indexes": "tsx scripts/ensure-indexes.ts"
   },
   "dependencies": {

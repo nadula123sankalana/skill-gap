@@ -353,3 +353,165 @@ export async function updateSeverityConfig(
   revalidatePath("/admin/dashboard");
   return { success: true, message: "Severity thresholds saved." };
 }
+
+const roleSchema = z.object({
+  title: z.string().trim().min(3, "Title must be at least 3 characters"),
+  summary: z.string().trim().min(10, "Summary must be at least 10 characters"),
+  priority: z.coerce.number().int().min(1).max(100),
+});
+
+function parseRoleRequirements(formData: FormData) {
+  const skillIds = formData.getAll("reqSkillId").map(String);
+  const minScores = formData.getAll("reqMinScore").map(String);
+  const requirements: { skillId: string; minScore: number }[] = [];
+
+  for (let i = 0; i < skillIds.length; i++) {
+    const skillId = skillIds[i]?.trim();
+    if (!skillId) continue;
+    const minScore = Number(minScores[i]);
+    if (!Number.isFinite(minScore) || minScore < 0 || minScore > 100) {
+      return {
+        ok: false as const,
+        message: "Each requirement needs a min score between 0 and 100.",
+      };
+    }
+    requirements.push({ skillId, minScore });
+  }
+
+  if (requirements.length === 0) {
+    return {
+      ok: false as const,
+      message: "Add at least one skill requirement.",
+    };
+  }
+
+  // Dedupe by skillId (keep highest floor)
+  const bySkill = new Map<string, number>();
+  for (const r of requirements) {
+    bySkill.set(r.skillId, Math.max(bySkill.get(r.skillId) ?? 0, r.minScore));
+  }
+
+  return {
+    ok: true as const,
+    requirements: Array.from(bySkill.entries()).map(([skillId, minScore]) => ({
+      skillId,
+      minScore,
+    })),
+  };
+}
+
+export async function createInternshipRole(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = roleSchema.safeParse({
+    title: formData.get("title"),
+    summary: formData.get("summary"),
+    priority: formData.get("priority"),
+  });
+  if (!parsed.success) return zodFailure(parsed.error);
+
+  const reqs = parseRoleRequirements(formData);
+  if (!reqs.ok) return { success: false, message: reqs.message };
+
+  const { internshipRoles, skills } = await collections();
+  const skillOids = reqs.requirements.map((r) => oid(r.skillId));
+  const found = await skills.countDocuments({ _id: { $in: skillOids } });
+  if (found !== skillOids.length) {
+    return { success: false, message: "One or more selected skills were not found." };
+  }
+
+  try {
+    await internshipRoles.insertOne({
+      _id: new ObjectId(),
+      title: parsed.data.title,
+      summary: parsed.data.summary,
+      priority: parsed.data.priority,
+      requirements: reqs.requirements.map((r) => ({
+        skillId: oid(r.skillId),
+        minScore: r.minScore,
+      })),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  } catch {
+    return {
+      success: false,
+      message: "A role with this title may already exist.",
+    };
+  }
+
+  revalidatePath("/admin/roles");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Internship role created." };
+}
+
+export async function updateInternshipRole(
+  _prev: ActionResult | null,
+  formData: FormData
+): Promise<ActionResult> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { success: false, message: "Missing role id." };
+
+  const parsed = roleSchema.safeParse({
+    title: formData.get("title"),
+    summary: formData.get("summary"),
+    priority: formData.get("priority"),
+  });
+  if (!parsed.success) return zodFailure(parsed.error);
+
+  const reqs = parseRoleRequirements(formData);
+  if (!reqs.ok) return { success: false, message: reqs.message };
+
+  const { internshipRoles, skills } = await collections();
+  const skillOids = reqs.requirements.map((r) => oid(r.skillId));
+  const found = await skills.countDocuments({ _id: { $in: skillOids } });
+  if (found !== skillOids.length) {
+    return { success: false, message: "One or more selected skills were not found." };
+  }
+
+  try {
+    await internshipRoles.updateOne(
+      { _id: oid(id) },
+      {
+        $set: {
+          title: parsed.data.title,
+          summary: parsed.data.summary,
+          priority: parsed.data.priority,
+          requirements: reqs.requirements.map((r) => ({
+            skillId: oid(r.skillId),
+            minScore: r.minScore,
+          })),
+          updatedAt: new Date(),
+        },
+      }
+    );
+  } catch {
+    return {
+      success: false,
+      message: "Could not update role (duplicate title?).",
+    };
+  }
+
+  revalidatePath("/admin/roles");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/admin/dashboard");
+  return { success: true, message: "Internship role updated." };
+}
+
+export async function deleteInternshipRole(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const { internshipRoles } = await collections();
+  await internshipRoles.deleteOne({ _id: oid(id) });
+  revalidatePath("/admin/roles");
+  revalidatePath("/admin");
+  revalidatePath("/dashboard");
+  revalidatePath("/admin/dashboard");
+}

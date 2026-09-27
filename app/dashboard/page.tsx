@@ -24,9 +24,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { AssessmentPdfReport } from "@/components/assessment-pdf-report";
+import { DashboardTabs } from "@/components/dashboard/dashboard-tabs";
 import {
+  SkillGapList,
+  type SkillGapRow,
+} from "@/components/dashboard/skill-gap-list";
+import { readinessBand } from "@/lib/readiness";
+import { InternshipMatchPanel } from "@/components/internship-match-panel";
+import { matchStudentToRoles } from "@/lib/internship-match";
+import {
+  ArrowRight,
   ArrowUpRight,
+  Briefcase,
   ClipboardList,
+  FileText,
+  RotateCcw,
   Sparkles,
   type LucideIcon,
   AlertTriangle,
@@ -68,7 +80,7 @@ export default async function DashboardPage() {
         <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
           <DashboardBanner
             name={session.user.name ?? "there"}
-            subtitle="Take your first assessment to unlock your readiness signal."
+            subtitle="Student dashboard"
           />
           <div className="mt-8">
             <EmptyState
@@ -204,7 +216,11 @@ export default async function DashboardPage() {
       : 0;
 
   const submittedLabel = latest.submittedAt
-    ? new Date(latest.submittedAt).toLocaleDateString()
+    ? new Date(latest.submittedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
     : "recently";
 
   const reportSkills = sortedGaps.map((g) => {
@@ -228,207 +244,352 @@ export default async function DashboardPage() {
     };
   });
 
+  const [allSkills, roleDocs] = await Promise.all([
+    c.skills.find({}).project({ name: 1 }).toArray(),
+    c.internshipRoles.find({}).sort({ priority: 1, title: 1 }).toArray(),
+  ]);
+  const skillNameById = new Map(
+    allSkills.map((s) => [idStr(s._id), s.name] as const)
+  );
+  const roleMatches = matchStudentToRoles(
+    roleDocs,
+    scoreBySkill,
+    skillNameById
+  );
+  const bestRole = [...roleMatches].sort(
+    (a, b) => b.matchPercent - a.matchPercent || a.priority - b.priority
+  )[0];
+
+  const gapRows: SkillGapRow[] = sortedGaps.map((g) => {
+    const sid = idStr(g.skillId);
+    return {
+      id: idStr(g._id),
+      name: skillName.get(sid) ?? "Skill",
+      score: scoreBySkill.get(sid) ?? 0,
+      benchmark: benchBySkill.get(sid) ?? null,
+      gap: g.gapScore,
+      severity: g.severity,
+    };
+  });
+  const priorities = gapRows.filter((r) => r.severity !== "GREEN").slice(0, 3);
+  const topPriority = priorities[0];
+
+  const severityBySkill = new Map(
+    gaps.map((g) => [idStr(g.skillId), g.severity] as const)
+  );
+  const sortedRecommendations = [...recommendations].sort(
+    (a, b) =>
+      severityOrder[severityBySkill.get(idStr(a.skillId)) ?? "GREEN"] -
+      severityOrder[severityBySkill.get(idStr(b.skillId)) ?? "GREEN"]
+  );
+
+  const overview = (
+    <div className="space-y-6">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex-row items-start justify-between gap-4 space-y-0">
+            <div>
+              <CardTitle className="text-lg">Priority focus</CardTitle>
+              <CardDescription className="mt-1.5">
+                The skills furthest from the industry benchmark.
+              </CardDescription>
+            </div>
+            <SectionLink href="#gaps">All skills</SectionLink>
+          </CardHeader>
+          <CardContent>
+            {priorities.length === 0 ? (
+              <div className="flex items-center gap-3 rounded-xl bg-severity-green/10 px-4 py-4 text-sm text-foreground">
+                <CheckCircle2
+                  className="h-5 w-5 shrink-0 text-severity-green"
+                  aria-hidden
+                />
+                Every skill you rated is on track. Keep practising and retake
+                the assessment to confirm your progress.
+              </div>
+            ) : (
+              <ol className="space-y-3">
+                {priorities.map((p, i) => (
+                  <li
+                    key={p.id}
+                    className="flex items-center gap-4 rounded-xl border border-border px-4 py-3"
+                  >
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-primary">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="truncate font-medium text-foreground">
+                          {p.name}
+                        </p>
+                        <SeverityBadge severity={p.severity} />
+                      </div>
+                      <p className="mt-1 text-xs text-muted">
+                        Score {Math.round(p.score)} · Benchmark{" "}
+                        {p.benchmark === null ? "—" : Math.round(p.benchmark)} ·{" "}
+                        <span className="font-semibold text-foreground">
+                          {p.gap.toFixed(0)} pts to close
+                        </span>
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </CardContent>
+        </Card>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 font-medium">
+                <Briefcase className="h-4 w-4 text-primary" aria-hidden />
+                Best internship fit
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {bestRole ? (
+                <>
+                  <p className="font-display text-lg font-medium text-foreground">
+                    {bestRole.title}
+                  </p>
+                  <p className="mt-1 text-sm text-muted">
+                    {bestRole.metCount} of {bestRole.requiredCount} requirements
+                    met
+                  </p>
+                  <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-accent">
+                    <div
+                      className="h-full rounded-full bg-brand-pill"
+                      style={{ width: `${Math.max(2, bestRole.matchPercent)}%` }}
+                    />
+                  </div>
+                  <p className="mt-1.5 text-xs text-muted">
+                    {bestRole.matchPercent}% match · {bestRole.levelLabel}
+                  </p>
+                  <SectionLink href="#roles" className="mt-4">
+                    Compare all roles
+                  </SectionLink>
+                </>
+              ) : (
+                <p className="text-sm text-muted">
+                  No internship roles are configured yet.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 font-medium">
+                <FileText className="h-4 w-4 text-primary" aria-hidden />
+                Assessment report
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted">
+                A printable summary of your scores, gaps and focus plan.
+              </p>
+              <SectionLink href="#report" className="mt-3">
+                View &amp; download
+              </SectionLink>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {guidanceText && <FocusPlan text={guidanceText} />}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Score vs industry benchmark</CardTitle>
+          <CardDescription>
+            Bars are colour-coded by severity: on track within{" "}
+            {severityConfig.greenMaxGap} pts, moderate within{" "}
+            {severityConfig.yellowMaxGap} pts, critical beyond that.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <GapBarChart data={chartData} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const gapsTab = (
+    <div>
+      <SectionIntro
+        title="Skill gaps"
+        description="Sorted critical first. The marker on each bar shows the industry benchmark. Only skills you rated are included."
+      />
+      <div className="mt-5">
+        <SkillGapList rows={gapRows} />
+      </div>
+    </div>
+  );
+
+  const recommendationsTab = (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <SectionIntro
+          title="Recommendations"
+          description="Learning resources for your critical and moderate gaps, most urgent first."
+        />
+        <RefreshRecommendationsButton />
+      </div>
+
+      {guidanceText && <FocusPlan text={guidanceText} />}
+
+      {sortedRecommendations.length === 0 ? (
+        <EmptyState
+          icon={CheckCircle2}
+          title="Nothing to work on right now"
+          description="You have no critical or moderate gaps. Keep building on your strengths, or retake the assessment after more practice."
+        />
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2">
+          {sortedRecommendations.map((rec) => {
+            const rule = rec.ruleId ? ruleById.get(idStr(rec.ruleId)) : null;
+            const isFallback = !rec.ruleId;
+            const severity = severityBySkill.get(idStr(rec.skillId));
+            return (
+              <Card
+                key={idStr(rec._id)}
+                interactive={!isFallback}
+                className="flex h-full flex-col"
+              >
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                      {skillName.get(idStr(rec.skillId)) ?? "Skill"}
+                    </p>
+                    {severity && <SeverityBadge severity={severity} />}
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-1 flex-col gap-4 text-sm">
+                  {isFallback ? (
+                    <p className="text-muted">{FALLBACK_MESSAGE}</p>
+                  ) : (
+                    <>
+                      <div>
+                        <span className="rounded-full bg-accent px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
+                          {rule?.resourceType ?? "Resource"}
+                        </span>
+                        <p className="mt-3 font-medium leading-snug text-foreground">
+                          {rule?.resourceTitle}
+                        </p>
+                      </div>
+                      {rule?.resourceUrl && (
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="mt-auto self-start"
+                        >
+                          <a
+                            href={rule.resourceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Open resource
+                            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
+                            <span className="sr-only">(opens in new tab)</span>
+                          </a>
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="bg-subtle pb-16">
-      <div className="mx-auto max-w-7xl space-y-8 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-8 px-4 py-10 sm:px-6 lg:px-8">
         <DashboardBanner
           name={session.user.name ?? "there"}
-          subtitle={`Latest assessment submitted ${submittedLabel}.`}
+          subtitle={`Latest assessment · ${submittedLabel}`}
           readiness={readiness}
-          counts={counts}
+          topPriority={topPriority}
         />
 
-        <StaggerGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StaggerGroup className="no-print grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <StatTile
+            href="#gaps"
             icon={AlertTriangle}
             label="Critical gaps"
+            hint={`Over ${severityConfig.yellowMaxGap} pts below`}
             value={counts.red}
             tone="text-severity-red bg-severity-red/10"
           />
           <StatTile
+            href="#gaps"
             icon={CircleDot}
             label="Moderate gaps"
+            hint={`${severityConfig.greenMaxGap}–${severityConfig.yellowMaxGap} pts below`}
             value={counts.yellow}
             tone="text-severity-yellow bg-severity-yellow/10"
           />
           <StatTile
+            href="#gaps"
             icon={CheckCircle2}
             label="On track"
+            hint={`Within ${severityConfig.greenMaxGap} pts`}
             value={counts.green}
             tone="text-severity-green bg-severity-green/10"
           />
           <StatTile
+            href="#recommendations"
             icon={Sparkles}
             label="Recommendations"
+            hint="Resources to close gaps"
             value={recommendations.length}
             tone="text-primary bg-accent"
           />
         </StaggerGroup>
 
-        <AssessmentPdfReport
-          studentName={session.user.name ?? "Student"}
-          studentEmail={session.user.email}
-          submittedLabel={submittedLabel}
-          readiness={readiness}
-          counts={counts}
-          skills={reportSkills}
-          guidanceText={guidanceText}
-          recommendations={reportRecommendations}
+        <DashboardTabs
+          tabs={[
+            { value: "overview", label: "Overview", content: overview },
+            {
+              value: "gaps",
+              label: "Skill gaps",
+              count: gaps.length,
+              content: gapsTab,
+            },
+            {
+              value: "recommendations",
+              label: "Recommendations",
+              count: recommendations.length,
+              content: recommendationsTab,
+            },
+            {
+              value: "roles",
+              label: "Internship roles",
+              count: roleMatches.length,
+              content: <InternshipMatchPanel matches={roleMatches} />,
+            },
+            {
+              value: "report",
+              label: "Report",
+              content: (
+                <AssessmentPdfReport
+                  studentName={session.user.name ?? "Student"}
+                  studentEmail={session.user.email}
+                  submittedLabel={submittedLabel}
+                  readiness={readiness}
+                  counts={counts}
+                  skills={reportSkills}
+                  guidanceText={guidanceText}
+                  recommendations={reportRecommendations}
+                />
+              ),
+            },
+          ]}
         />
-
-        <Reveal>
-          <Card className="no-print">
-            <CardHeader>
-              <CardTitle className="text-lg">
-                Score vs industry benchmark
-              </CardTitle>
-              <CardDescription>
-                Bars are colour-coded by live severity thresholds (green ≤{" "}
-                {severityConfig.greenMaxGap}, yellow ≤{" "}
-                {severityConfig.yellowMaxGap}).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <GapBarChart data={chartData} />
-            </CardContent>
-          </Card>
-        </Reveal>
-
-        <section className="no-print">
-          <Reveal>
-            <h2 className="font-display text-xl font-medium">Skill gaps</h2>
-            <p className="mt-1 text-sm text-muted">
-              Sorted critical first. Only skills you rated are included —
-              skipped skills do not appear.
-            </p>
-          </Reveal>
-
-          <StaggerGroup as="ul" className="mt-5 space-y-3" stagger={0.05}>
-            {sortedGaps.map((g) => {
-              const sid = idStr(g.skillId);
-              const score = scoreBySkill.get(sid) ?? 0;
-              const bench = benchBySkill.get(sid);
-              return (
-                <StaggerItem
-                  as="li"
-                  key={idStr(g._id)}
-                  className="group flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-white px-5 py-4 shadow-soft transition-shadow hover:shadow-lift"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-display text-base font-medium text-foreground">
-                      {skillName.get(sid) ?? "Skill"}
-                    </p>
-                    <p className="mt-1 text-xs text-muted">
-                      Gap score {g.gapScore.toFixed(1)} · Your score{" "}
-                      {score.toFixed(0)} · Benchmark {bench ?? "—"}
-                    </p>
-                    <div className="mt-3 h-1.5 w-full max-w-md overflow-hidden rounded-full bg-accent">
-                      <div
-                        className={`h-full rounded-full ${
-                          g.severity === "RED"
-                            ? "bg-severity-red"
-                            : g.severity === "YELLOW"
-                              ? "bg-severity-yellow"
-                              : "bg-severity-green"
-                        }`}
-                        style={{
-                          width: `${Math.max(4, Math.min(100, score))}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                  <SeverityBadge severity={g.severity} />
-                </StaggerItem>
-              );
-            })}
-          </StaggerGroup>
-        </section>
-
-        <section className="no-print">
-          <Reveal className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="font-display text-xl font-medium">
-                Recommendations
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                Based on critical and moderate gaps. Refresh after an admin
-                updates rules.
-              </p>
-            </div>
-            <RefreshRecommendationsButton />
-          </Reveal>
-
-          {guidanceText && (
-            <Reveal className="mt-5">
-              <Card className="overflow-hidden border-primary/20">
-                <div className="bg-brand-pill px-6 py-3">
-                  <p className="flex items-center gap-2 text-sm font-semibold text-white">
-                    <Sparkles className="h-4 w-4" aria-hidden />
-                    Focus plan
-                  </p>
-                </div>
-                <CardContent className="pt-5">
-                  <p className="text-sm leading-relaxed text-foreground">
-                    {guidanceText}
-                  </p>
-                </CardContent>
-              </Card>
-            </Reveal>
-          )}
-
-          <StaggerGroup className="mt-5 grid gap-4 sm:grid-cols-2">
-            {recommendations.length === 0 && (
-              <StaggerItem className="sm:col-span-2">
-                <p className="text-sm text-muted">
-                  No critical or moderate gaps — keep building on your
-                  strengths, or retake the assessment after more practice.
-                </p>
-              </StaggerItem>
-            )}
-            {recommendations.map((rec) => {
-              const rule = rec.ruleId ? ruleById.get(idStr(rec.ruleId)) : null;
-              const isFallback = !rec.ruleId;
-              return (
-                <StaggerItem key={idStr(rec._id)}>
-                  <Card interactive className="h-full">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between gap-3">
-                        <CardTitle className="text-base">
-                          {skillName.get(idStr(rec.skillId)) ?? "Skill"}
-                        </CardTitle>
-                        <span className="rounded-full bg-accent px-2.5 py-1 text-[0.7rem] font-semibold text-primary">
-                          {isFallback
-                            ? "Needs admin review"
-                            : (rule?.resourceType ?? "Resource")}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-2 text-sm">
-                      {isFallback ? (
-                        <p className="text-muted">{FALLBACK_MESSAGE}</p>
-                      ) : (
-                        <>
-                          <p className="font-medium">{rule?.resourceTitle}</p>
-                          {rule?.resourceUrl && (
-                            <a
-                              href={rule.resourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-                            >
-                              Open resource
-                              <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />
-                            </a>
-                          )}
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-                </StaggerItem>
-              );
-            })}
-          </StaggerGroup>
-        </section>
       </div>
     </div>
   );
@@ -438,55 +599,83 @@ function DashboardBanner({
   name,
   subtitle,
   readiness,
-  counts,
+  topPriority,
 }: {
   name: string;
   subtitle: string;
   readiness?: number;
-  counts?: { red: number; yellow: number; green: number };
+  topPriority?: SkillGapRow;
 }) {
   return (
     <Reveal
       preset="fade"
-      className="noise-overlay relative isolate overflow-hidden rounded-3xl bg-mesh-hero px-6 py-9 sm:px-10 sm:py-11"
+      className="no-print noise-overlay relative isolate overflow-hidden rounded-3xl bg-mesh-hero px-6 py-8 sm:px-10 sm:py-10"
     >
       <div className="grid-overlay pointer-events-none absolute inset-0" aria-hidden />
-      <div className="relative flex flex-wrap items-center justify-between gap-8">
-        <div className="min-w-0">
+      <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 max-w-2xl">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">
-            Student dashboard
+            {subtitle}
           </p>
           <h1 className="mt-3 font-display text-3xl font-medium tracking-tight text-white sm:text-4xl">
             Welcome back, {name}
           </h1>
-          <p className="mt-3 max-w-xl text-sm text-white/80">{subtitle}</p>
-          {counts && (
-            <p className="mt-4 text-sm text-white/80">
-              {counts.red} critical · {counts.yellow} moderate · {counts.green}{" "}
-              on track
+
+          {readiness === undefined ? (
+            <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">
+              Take your first assessment to unlock your readiness signal.
+            </p>
+          ) : topPriority ? (
+            <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">
+              Your top priority is{" "}
+              <span className="font-semibold text-white">
+                {topPriority.name}
+              </span>{" "}
+              — {topPriority.gap.toFixed(0)} pts below the industry benchmark.
+            </p>
+          ) : (
+            <p className="mt-3 text-sm leading-relaxed text-white/85 sm:text-base">
+              Every skill you rated is at or near the industry benchmark.
             </p>
           )}
+
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild variant="onBrand">
-              <Link href="/dashboard/assessment">
-                {readiness === undefined
-                  ? "Start assessment"
-                  : "Retake assessment"}
-              </Link>
-            </Button>
+            {readiness === undefined ? (
+              <Button asChild variant="onBrand">
+                <Link href="/dashboard/assessment">Start assessment</Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild variant="onBrand">
+                  <a href="#recommendations">
+                    View action plan
+                    <ArrowRight className="h-4 w-4" aria-hidden />
+                  </a>
+                </Button>
+                <Button asChild variant="onDark">
+                  <Link href="/dashboard/assessment">
+                    <RotateCcw className="h-4 w-4" aria-hidden />
+                    Retake assessment
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
 
         {readiness !== undefined && (
-          <div className="flex items-center gap-5">
-            <ReadinessRing value={readiness} />
-            <div className="hidden max-w-[12rem] sm:block">
+          <div className="flex items-center gap-5 rounded-2xl border border-white/20 bg-white/10 p-4 backdrop-blur sm:p-5">
+            <ReadinessRing value={readiness} size={116} />
+            <div className="max-w-[13rem]">
               <p className="font-display text-base font-medium text-white">
                 Internship readiness
               </p>
-              <p className="mt-1.5 text-xs leading-relaxed text-white/70">
-                Your average score as a share of the benchmark for every skill
-                you rated.
+              <span className="mt-1.5 inline-flex rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
+                {readinessBand(readiness)}
+              </span>
+              <p className="mt-2 text-xs leading-relaxed text-white/75">
+                Average of your scores as a share of each skill&apos;s
+                benchmark.
               </p>
             </div>
           </div>
@@ -497,31 +686,90 @@ function DashboardBanner({
 }
 
 function StatTile({
+  href,
   icon: Icon,
   label,
+  hint,
   value,
   tone,
 }: {
+  href: string;
   icon: LucideIcon;
   label: string;
+  hint: string;
   value: number;
   tone: string;
 }) {
   return (
     <StaggerItem>
-      <div className="flex items-center gap-4 rounded-2xl border border-border bg-white p-5 shadow-soft">
+      <a
+        href={href}
+        className="group flex h-full items-start gap-3 rounded-2xl border border-border bg-white p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lift focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:gap-4 sm:p-5"
+      >
         <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tone}`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11 ${tone}`}
         >
           <Icon className="h-5 w-5" aria-hidden />
         </span>
-        <div>
-          <p className="font-display text-2xl font-medium text-foreground">
+        <div className="min-w-0">
+          <p className="font-display text-2xl font-medium tabular-nums text-foreground">
             {value}
           </p>
-          <p className="text-xs text-muted">{label}</p>
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="mt-0.5 hidden text-xs text-muted sm:block">{hint}</p>
         </div>
-      </div>
+      </a>
     </StaggerItem>
+  );
+}
+
+function SectionIntro({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div>
+      <h2 className="font-display text-xl font-medium">{title}</h2>
+      <p className="mt-1 max-w-2xl text-sm text-muted">{description}</p>
+    </div>
+  );
+}
+
+function SectionLink({
+  href,
+  children,
+  className,
+}: {
+  href: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <a
+      href={href}
+      className={`inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary hover:underline ${className ?? ""}`}
+    >
+      {children}
+      <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+    </a>
+  );
+}
+
+function FocusPlan({ text }: { text: string }) {
+  return (
+    <Card className="overflow-hidden border-primary/20">
+      <div className="bg-brand-pill px-6 py-3">
+        <p className="flex items-center gap-2 text-sm font-semibold text-white">
+          <Sparkles className="h-4 w-4" aria-hidden />
+          Your focus plan
+        </p>
+      </div>
+      <CardContent className="pt-5">
+        <p className="text-sm leading-relaxed text-foreground">{text}</p>
+      </CardContent>
+    </Card>
   );
 }

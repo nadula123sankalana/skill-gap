@@ -5,6 +5,7 @@ import { FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
+import { readinessLabel } from "@/lib/readiness";
 
 export type ReportSkillRow = {
   name: string;
@@ -34,13 +35,6 @@ type AssessmentPdfReportProps = {
 
 function safeFilename(name: string) {
   return name.replace(/[^\w.-]+/g, "_").replace(/_+/g, "_").slice(0, 60);
-}
-
-function readinessLabel(readiness: number) {
-  if (readiness >= 85) return "Strong internship readiness";
-  if (readiness >= 70) return "Developing internship readiness";
-  if (readiness >= 50) return "Emerging readiness — focus on critical gaps";
-  return "Significant gaps — prioritize skill building";
 }
 
 /**

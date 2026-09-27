@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   ArrowUpRight,
+  Briefcase,
   Layers,
   Lightbulb,
   Target,
@@ -16,9 +17,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminHomePage() {
   const c = await collections();
-  const [skillCount, benchmarkCount, ruleCount, studentCount] =
+  const [skillCount, roleCount, benchmarkCount, ruleCount, studentCount] =
     await Promise.all([
       c.skills.countDocuments(),
+      c.internshipRoles.countDocuments(),
       c.industryBenchmarks.countDocuments(),
       c.recommendationRules.countDocuments(),
       c.studentProfiles.countDocuments(),
@@ -29,7 +31,7 @@ export default async function AdminHomePage() {
       <AdminPageHeader
         eyebrow="Admin"
         title="Configuration overview"
-        description="Manage skills, benchmarks, recommendation rules, and severity thresholds. Nothing is hardcoded in application code — every value lives in MongoDB and is editable here."
+        description="Manage skills, internship role floors, benchmarks, recommendation rules, and severity thresholds. Nothing is hardcoded in application code — every value lives in MongoDB and is editable here."
       />
 
       <StaggerGroup className="grid gap-4 sm:grid-cols-2">
@@ -40,6 +42,14 @@ export default async function AdminHomePage() {
           href="/admin/skills"
           cta="Manage skills"
           hint="Technical and soft skills used in the assessment."
+        />
+        <StatCard
+          icon={Briefcase}
+          title="Internship roles"
+          value={roleCount}
+          href="/admin/roles"
+          cta="Manage roles"
+          hint="Rule-based skill floors for transparent internship matching."
         />
         <StatCard
           icon={Target}

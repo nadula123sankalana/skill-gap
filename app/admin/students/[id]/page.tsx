@@ -10,6 +10,8 @@ import {
 } from "@/lib/constants";
 import { SeverityBadge } from "@/components/severity-badge";
 import { GapBarChart } from "@/components/gap-bar-chart";
+import { InternshipMatchPanel } from "@/components/internship-match-panel";
+import { matchStudentToRoles } from "@/lib/internship-match";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Reveal } from "@/components/motion/reveal";
 import { StaggerGroup, StaggerItem } from "@/components/motion/stagger";
@@ -135,6 +137,19 @@ export default async function AdminStudentDrilldownPage({
       b.gapScore - a.gapScore
   );
 
+  const [allSkills, roleDocs] = await Promise.all([
+    c.skills.find({}).project({ name: 1 }).toArray(),
+    c.internshipRoles.find({}).sort({ priority: 1, title: 1 }).toArray(),
+  ]);
+  const skillNameById = new Map(
+    allSkills.map((s) => [idStr(s._id), s.name] as const)
+  );
+  const roleMatches = matchStudentToRoles(
+    roleDocs,
+    scoreBySkill,
+    skillNameById
+  );
+
   return (
     <div className="space-y-8">
       <AdminPageHeader
@@ -150,6 +165,13 @@ export default async function AdminStudentDrilldownPage({
             <Link href="/admin/dashboard">Back to cohort</Link>
           </Button>
         }
+      />
+
+      <InternshipMatchPanel
+        matches={roleMatches}
+        eyebrow="Matching roles"
+        title="Internship match indicators"
+        description="Transparent comparison of this student’s assessed scores against configured role skill floors — not a hiring recommendation."
       />
 
       <Reveal>
