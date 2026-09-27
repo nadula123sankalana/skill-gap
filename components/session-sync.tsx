@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { usePathname } from "next/navigation";
 import {
   clearAuthSessionState,
@@ -15,7 +15,7 @@ import {
  * and stores the last protected path for post-login return.
  */
 export function SessionSync() {
-  const { data: session, status } = useSession();
+  const { user } = useSession();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -28,22 +28,20 @@ export function SessionSync() {
   }, [pathname]);
 
   useEffect(() => {
-    if (status === "loading") return;
-
-    if (status === "unauthenticated" || !session?.user) {
+    if (!user) {
       clearAuthSessionState();
       return;
     }
 
     const prev = getAuthSessionState();
     setAuthSessionState({
-      id: session.user.id,
-      email: session.user.email,
-      role: session.user.role,
+      id: user.id,
+      email: user.email,
+      role: user.role,
       remembered: prev?.remembered ?? false,
       signedInAt: prev?.signedInAt ?? Date.now(),
     });
-  }, [status, session]);
+  }, [user]);
 
   return null;
 }

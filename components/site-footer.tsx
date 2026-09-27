@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { Activity, ArrowRight, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/motion/reveal";
@@ -15,12 +15,12 @@ const institutionLinks = [
 ];
 
 export function SiteFooter() {
-  const { data: session } = useSession();
+  const { user } = useSession();
 
   const dashboardHref =
-    session?.user?.role === "ADMIN"
+    user?.role === "ADMIN"
       ? "/admin"
-      : session?.user
+      : user
         ? "/dashboard"
         : "/login";
 
@@ -92,7 +92,7 @@ export function SiteFooter() {
                   href={dashboardHref}
                   className="text-muted transition-colors hover:text-primary"
                 >
-                  {session?.user?.role === "ADMIN"
+                  {user?.role === "ADMIN"
                     ? "Admin console"
                     : "Dashboard"}
                 </Link>

@@ -32,8 +32,9 @@ export default function GlobalError({
           <h1 style={{ fontSize: 24, marginBottom: 8 }}>Something went wrong</h1>
           <p style={{ color: "#5B6580", marginBottom: 16 }}>
             A server error occurred. If this is a fresh deploy, confirm{" "}
-            <code>DATABASE_URL</code>, <code>NEXTAUTH_SECRET</code>, and{" "}
-            <code>NEXTAUTH_URL</code> are set in Vercel.
+            <code>DATABASE_URL</code> and <code>NEXTAUTH_SECRET</code> are set in
+            Vercel. <code>NEXTAUTH_URL</code> should be left unset there — the
+            origin is detected from the request.
           </p>
           {error.digest && (
             <p

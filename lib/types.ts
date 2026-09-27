@@ -6,6 +6,11 @@ export type AssessmentStatus = "DRAFT" | "SUBMITTED";
 export type Severity = "RED" | "YELLOW" | "GREEN";
 export type ResourceType = "COURSE" | "WORKSHOP" | "PROJECT";
 export type RecommendationStatus = "PENDING" | "IN_PROGRESS" | "DONE";
+export type InternshipMatchLevel =
+  | "STRONG"
+  | "POTENTIAL"
+  | "DEVELOPING"
+  | "SIGNIFICANT";
 
 export type UserDoc = {
   _id: ObjectId;
@@ -111,6 +116,23 @@ export type AdminInsightDoc = {
   _id: ObjectId;
   summaryText: string;
   refreshedAt: Date;
+};
+
+/** Admin-configured internship role with skill score requirements. */
+export type InternshipRoleRequirementDoc = {
+  skillId: ObjectId;
+  minScore: number;
+};
+
+export type InternshipRoleDoc = {
+  _id: ObjectId;
+  title: string;
+  summary: string;
+  /** Lower sorts first in match lists. */
+  priority: number;
+  requirements: InternshipRoleRequirementDoc[];
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 /** UI-facing shape with string ids */

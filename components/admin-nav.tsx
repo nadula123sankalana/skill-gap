@@ -10,6 +10,7 @@ import {
   Target,
   Lightbulb,
   SlidersHorizontal,
+  Briefcase,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,7 @@ const links: {
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/dashboard", label: "Cohort", icon: Users },
   { href: "/admin/skills", label: "Skills", icon: Layers },
+  { href: "/admin/roles", label: "Internship roles", icon: Briefcase },
   { href: "/admin/benchmarks", label: "Benchmarks", icon: Target },
   { href: "/admin/rules", label: "Rules", icon: Lightbulb },
   {

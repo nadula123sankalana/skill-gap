@@ -254,6 +254,29 @@ const demoSkills: {
     ],
   },
   {
+    name: "Docker & Containers",
+    category: "TECHNICAL",
+    description:
+      "Building, running, and debugging containerised apps with Docker — an expected baseline for many DevOps and cloud internship roles.",
+    requiredScore: 65,
+    rules: [
+      {
+        minGapThreshold: 10,
+        resourceTitle: "Docker Getting Started",
+        resourceUrl: "https://docs.docker.com/get-started/",
+        resourceType: "COURSE",
+        priority: 1,
+      },
+      {
+        minGapThreshold: 15,
+        resourceTitle: "Containerise a campus project API",
+        resourceUrl: "https://example.edu/projects/dockerise-api",
+        resourceType: "PROJECT",
+        priority: 2,
+      },
+    ],
+  },
+  {
     name: "Linux & Command Line",
     category: "TECHNICAL",
     description:
@@ -455,6 +478,9 @@ async function main() {
     }
   }
 
+  const { upsertInternshipRoles } = await import("./internship-roles-seed");
+  const rolesResult = await upsertInternshipRoles(db);
+
   const tech = await skills.countDocuments({ category: "TECHNICAL" });
   const soft = await skills.countDocuments({ category: "SOFT" });
   const total = await skills.countDocuments();
@@ -463,7 +489,8 @@ async function main() {
 
   console.log("Demo skill library ready.");
   console.log({ created, updated, total, technical: tech, soft, benches, rules });
-  console.log("Open Admin → Skills / Benchmarks / Rules to show the client.");
+  console.log("Internship roles:", rolesResult);
+  console.log("Open Admin → Skills / Internship roles to show the client.");
 
   await client.close();
 }

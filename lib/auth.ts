@@ -1,178 +1,121 @@
-import { type NextAuthOptions, getServerSession } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { encode as jwtEncode, decode as jwtDecode } from "next-auth/jwt";
+import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 import { collections } from "@/lib/mongodb";
+import { idStr } from "@/lib/types";
 import type { Role } from "@/lib/types";
-import { idStr, oid } from "@/lib/types";
+import { SESSION_COOKIE, signJwt, verifyJwt } from "@/lib/jwt";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      role: Role;
-    };
-  }
+export { SESSION_COOKIE };
 
-  interface User {
-    role: Role;
-    remember?: boolean;
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
+export type Session = {
+  user: {
     id: string;
+    name: string;
+    email: string;
     role: Role;
-    remember?: boolean;
-  }
-}
-
-const isProd = process.env.NODE_ENV === "production";
-
-/** Persistent login (Keep me signed in): 30 days. */
-const PERSISTENT_MAX_AGE = 30 * 24 * 60 * 60;
-/** Browser session style (default, higher security): 12 hours. */
-const SESSION_MAX_AGE = 12 * 60 * 60;
-
-export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET,
-  session: {
-    strategy: "jwt",
-    // Cookie upper bound; jwt.encode() below shortens the token itself when
-    // "Keep me signed in" was left unchecked.
-    maxAge: PERSISTENT_MAX_AGE,
-    updateAge: 60 * 60, // refresh claims hourly while active
-  },
-  jwt: {
-    maxAge: PERSISTENT_MAX_AGE,
-    /**
-     * The session cookie is always written with the 30-day upper bound, so the
-     * only place the "Keep me signed in" choice can actually be enforced is the
-     * expiry baked into the encrypted JWT itself. Without this, an unchecked
-     * box still produced a 30-day login.
-     */
-    async encode({ token, secret, salt }) {
-      const maxAge = token?.remember ? PERSISTENT_MAX_AGE : SESSION_MAX_AGE;
-      return jwtEncode({ token, secret, salt, maxAge });
-    },
-    decode: jwtDecode,
-  },
-  pages: {
-    signIn: "/login",
-  },
-  // Production-hardening for the session cookie (JWT stays httpOnly — never in JS).
-  cookies: {
-    sessionToken: {
-      name: isProd
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: isProd,
-      },
-    },
-  },
-  providers: [
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-        remember: { label: "Remember", type: "text" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) {
-          return null;
-        }
-
-        const { users } = await collections();
-        const user = await users.findOne({
-          email: credentials.email.toLowerCase().trim(),
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        const valid = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash
-        );
-
-        if (!valid) {
-          return null;
-        }
-
-        const remember =
-          credentials.remember === "true" || credentials.remember === "1";
-
-        return {
-          id: idStr(user._id),
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          remember,
-        };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user, trigger }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.remember = Boolean(user.remember);
-        // Expiry itself is applied by the custom jwt.encode() above.
-      }
-
-      // Client-driven session.update(): the payload is attacker-controlled, so it
-      // must never be merged into the token (that allowed STUDENT -> ADMIN
-      // escalation). Re-read the authoritative identity from MongoDB instead.
-      if (trigger === "update" && token.id) {
-        try {
-          const { users } = await collections();
-          const fresh = await users.findOne(
-            { _id: oid(token.id) },
-            { projection: { name: 1, email: 1, role: 1 } }
-          );
-          if (fresh) {
-            token.name = fresh.name;
-            token.email = fresh.email;
-            token.role = fresh.role;
-          }
-        } catch (err) {
-          console.error("jwt update refresh failed:", err);
-        }
-      }
-
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-      }
-      return session;
-    },
-  },
+  };
 };
 
-/** Never throw from the root layout — missing env on Vercel must not 500 the whole site. */
-export async function getSession() {
+/** "Keep me signed in": 30 days. Otherwise 12 hours. */
+const PERSISTENT_MAX_AGE = 30 * 24 * 60 * 60;
+const SESSION_MAX_AGE = 12 * 60 * 60;
+
+export function authSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET ?? process.env.AUTH_SECRET;
+  if (!secret) {
+    throw new Error(
+      "NEXTAUTH_SECRET (or AUTH_SECRET) is not set — sessions cannot be signed."
+    );
+  }
+  return secret;
+}
+
+/**
+ * Verify email + password against MongoDB.
+ * Returns null for both "no such user" and "wrong password" so the caller can
+ * never leak which one it was.
+ */
+export async function verifyCredentials(
+  email: string,
+  password: string
+): Promise<Session["user"] | null> {
+  const { users } = await collections();
+  const user = await users.findOne({ email: email.toLowerCase().trim() });
+  if (!user) return null;
+
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) return null;
+
+  return {
+    id: idStr(user._id),
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
+}
+
+/** Issue the session cookie. Role comes from the database, never from input. */
+export async function createSession(
+  user: Session["user"],
+  remember: boolean
+): Promise<void> {
+  const maxAge = remember ? PERSISTENT_MAX_AGE : SESSION_MAX_AGE;
+  const token = await signJwt(
+    {
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      remember,
+    },
+    authSecret(),
+    maxAge
+  );
+
+  cookies().set(SESSION_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    maxAge,
+  });
+}
+
+export async function destroySession(): Promise<void> {
+  cookies().set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 0,
+  });
+}
+
+/**
+ * Read the current session. Never throws — a missing secret or a malformed
+ * cookie yields null rather than a 500 from the root layout.
+ */
+export async function getSession(): Promise<Session | null> {
   try {
-    if (!process.env.NEXTAUTH_SECRET) {
-      console.error(
-        "NEXTAUTH_SECRET is not set. Auth will not work until it is configured."
-      );
-      return null;
-    }
-    return await getServerSession(authOptions);
+    const token = cookies().get(SESSION_COOKIE)?.value;
+    if (!token) return null;
+
+    const payload = await verifyJwt(token, authSecret());
+    if (!payload) return null;
+
+    return {
+      user: {
+        id: payload.sub,
+        name: payload.name,
+        email: payload.email,
+        role: payload.role as Role,
+      },
+    };
   } catch (err) {
+    // Next signals dynamic rendering (and redirects) by throwing tagged errors.
+    // Swallowing those would break its static/dynamic detection, so only a
+    // genuine failure is converted into "no session".
+    if (err && typeof err === "object" && "digest" in err) throw err;
     console.error("getSession failed:", err);
     return null;
   }

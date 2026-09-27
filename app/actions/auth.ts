@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { collections } from "@/lib/mongodb";
+import { createSession, destroySession, verifyCredentials } from "@/lib/auth";
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
@@ -100,4 +101,72 @@ export async function registerStudent(
       message: "Registration failed. Please try again.",
     };
   }
+}
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
+  password: z.string().min(1, "Enter your password"),
+});
+
+export type LoginResult = {
+  success: boolean;
+  message: string;
+  /** Where the client should navigate on success. Always an app-relative path. */
+  redirectTo?: string;
+};
+
+/**
+ * Sign in and set the session cookie.
+ *
+ * Returns a relative path rather than performing the redirect itself: the caller
+ * navigates with the App Router, so no absolute base URL is ever constructed and
+ * the flow works identically on every hostname the app is served from.
+ */
+export async function loginAction(
+  _prev: LoginResult | null,
+  formData: FormData
+): Promise<LoginResult> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!parsed.success) {
+    return { success: false, message: "Enter your email and password." };
+  }
+
+  const remember = formData.get("remember") === "on";
+
+  try {
+    const user = await verifyCredentials(parsed.data.email, parsed.data.password);
+    if (!user) {
+      return { success: false, message: "Invalid email or password." };
+    }
+
+    await createSession(user, remember);
+
+    // Only a validated same-site path is honoured, so the field cannot be used
+    // to bounce a user to another origin after login.
+    const requested = String(formData.get("callbackUrl") ?? "");
+    const safe =
+      requested.startsWith("/") &&
+      !requested.startsWith("//") &&
+      requested.startsWith("/dashboard");
+
+    return {
+      success: true,
+      message: "Signed in.",
+      redirectTo: user.role === "ADMIN" ? "/admin" : safe ? requested : "/dashboard",
+    };
+  } catch (err) {
+    console.error("loginAction failed:", err);
+    return {
+      success: false,
+      message: "Unable to sign in right now. Please try again.",
+    };
+  }
+}
+
+export async function logoutAction(): Promise<void> {
+  await destroySession();
 }

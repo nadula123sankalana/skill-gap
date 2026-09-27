@@ -1,19 +1,22 @@
 "use client";
 
-import { SessionProvider } from "next-auth/react";
 import { Toaster } from "@/components/ui/toaster";
+import { AuthProvider } from "@/lib/auth-client";
 import { SessionSync } from "@/components/session-sync";
+import type { Session } from "@/lib/auth";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  session,
+  children,
+}: {
+  session: Session | null;
+  children: React.ReactNode;
+}) {
   return (
-    <SessionProvider
-      // Keep client session warm while the tab is open (production pattern).
-      refetchInterval={5 * 60}
-      refetchOnWindowFocus
-    >
+    <AuthProvider session={session}>
       <SessionSync />
       {children}
       <Toaster />
-    </SessionProvider>
+    </AuthProvider>
   );
 }

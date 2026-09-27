@@ -368,6 +368,7 @@ async function main() {
   const skillGaps = db.collection<SkillGapDoc>("skillGaps");
   const recommendations = db.collection<RecommendationDoc>("recommendations");
   const cohortSummaries = db.collection<CohortSummaryDoc>("cohortSummaries");
+  const internshipRoles = db.collection("internshipRoles");
 
   console.log("Clearing collections…");
   await Promise.all([
@@ -383,6 +384,7 @@ async function main() {
     skills.deleteMany({}),
     severityConfig.deleteMany({}),
     users.deleteMany({}),
+    internshipRoles.deleteMany({}),
   ]);
 
   await users.createIndex({ email: 1 }, { unique: true });
@@ -436,15 +438,24 @@ async function main() {
     );
   }
 
+  const { upsertInternshipRoles } = await import("./internship-roles-seed");
+  const rolesResult = await upsertInternshipRoles(db);
+
   const counts = {
     users: await users.countDocuments(),
     skills: await skills.countDocuments(),
     benchmarks: await industryBenchmarks.countDocuments(),
     rules: await recommendationRules.countDocuments(),
     severity: await severityConfig.countDocuments(),
+    internshipRoles: rolesResult.upserted,
   };
 
   console.log("Seed complete:", counts);
+  if (rolesResult.skippedRequirements) {
+    console.log(
+      `(${rolesResult.skippedRequirements} role requirement(s) skipped — skill not in base seed; run npm run db:demo-skills for the full set.)`
+    );
+  }
   console.log("Admin login: admin@university.edu / Admin123!");
   await client.close();
 }
